@@ -38,7 +38,11 @@ class function(object):
                 return "  ON","OFF           ON"
             else:
                 return "  OFF","OFF           ON"
-
+    def get_disk(self, comm):
+        disk = psutil.disk_usage('/')
+        free = str(round(float(disk.free)/(1024*1024*1024),1))
+        total = str(round(float(disk.total)/(1024*1024*1024),1))
+        return "Free "+free+" GB","Total "+total+" GB"
     def get_ip_address(self, ifname):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
