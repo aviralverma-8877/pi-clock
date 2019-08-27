@@ -85,9 +85,9 @@ prev_btn = Button(27)
 next_btn = Button(18)
 yes_btn = Button(17)
 no_btn = Button(25)
-menu = ["       Time        ", "       Date        ","    Network      "," Temperature      ","        CPU      ","        RAM      ","    Shutdown      ", "    Restart      "]
-img = ["time.bmp", "calendar.bmp","network.bmp","temperature.bmp","cpu.bmp","ram.bmp","shutdown.bmp","restart.bmp"]
-func_list = ["functions.get_time","functions.get_date","functions.get_ip","functions.get_cpu_temperature","functions.get_cpu","functions.get_ram","functions.shutdown","functions.restart"]
+menu = ["       Time        ", "       Date        ","    Network      "," Temperature      ","        CPU      ","        RAM      ","    Back LED    ","    Shutdown      ", "    Restart      "]
+img = ["time.bmp", "calendar.bmp","network.bmp","temperature.bmp","cpu.bmp","ram.bmp","bkled.bmp","shutdown.bmp","restart.bmp"]
+func_list = ["functions.get_time","functions.get_date","functions.get_ip","functions.get_cpu_temperature","functions.get_cpu","functions.get_ram","functions.toggleBkled","functions.shutdown","functions.restart"]
 head = None
 body = None
 msg = None
@@ -95,19 +95,19 @@ option = 0
 btn_pressed = False
 command = "no"
 count = 0
-functions = function(prev_btn,next_btn,yes_btn,no_btn)
+functions = function(prev_btn,next_btn,yes_btn,no_btn, led, True)
 
 while(True):
     mem = psutil.virtual_memory()
     if not btn_pressed:
         btn_pressed = True
         if next_btn.is_pressed:
-            command = "no"
+            command = ""
             option = option + 1
             if option == len(menu):
                 option = 0
         elif prev_btn.is_pressed:
-            command = "no"
+            command = ""
             option = option - 1
             if option == -1:
                 option = int(len(menu)-1)
@@ -139,4 +139,4 @@ while(True):
         disp.display()
         count = 0
     count = count + 1
-    time.sleep(0.1)
+    time.sleep(0.05)

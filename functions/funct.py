@@ -16,11 +16,28 @@ import fcntl
 import struct
 
 class function(object):
-    def __init__(self, prev_btn, next_btn, yes_btn, no_btn):
+    def __init__(self, prev_btn, next_btn, yes_btn, no_btn, bkled, bkled_status):
         self.prev_btn = prev_btn
         self.next_btn = next_btn
         self.yes_btn = yes_btn
         self.no_btn = no_btn
+        self.bkled = bkled
+        self.bkled_status = bkled_status
+
+    def toggleBkled(self, comm):
+        if comm == "no":
+            self.bkled.on()
+            self.bkled_status = True
+            return "  ON","OFF           ON"
+        elif comm == "yes":
+            self.bkled.off()
+            self.bkled_status = False
+            return "  OFF","OFF           ON"
+        else:
+            if self.bkled_status:
+                return "  ON","OFF           ON"
+            else:
+                return "  OFF","OFF           ON"
 
     def get_ip_address(self, ifname):
         try:
@@ -42,7 +59,7 @@ class function(object):
 
 
     def get_date(self,format):
-        return str(datetime.now().strftime("%d-%m-%Y\n%B")), str(datetime.now().strftime("%A"))
+        return str(datetime.now().strftime("%d-%m-%Y\n %B")), str(datetime.now().strftime("%A"))
 
     def shutdown(self,comm):
         if comm == "yes":
@@ -76,11 +93,10 @@ class function(object):
         output, _error = process.communicate()
         temp_c = int(float(output[output.index('=') + 1:output.rindex("'")]))
         temp_f = int((temp_c*9/5)+32)
-        if comm == "no":
-            return str(temp_c)+" C","C              F"
         if comm == "yes":
-            return str(temp_f)+" F","C              F"
-
+            return str(temp_f)+" F","F              C"
+        else:
+            return str(temp_c)+" C","F              C"
 
     def get_ip(self,comm):
         IPAddr = self.get_ip_address('eth0')
