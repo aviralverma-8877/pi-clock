@@ -16,13 +16,15 @@ import fcntl
 import struct
 
 class function(object):
-    def __init__(self, prev_btn, next_btn, yes_btn, no_btn, bkled, bkled_status):
+    def __init__(self, prev_btn, next_btn, yes_btn, no_btn, bkled, bkled_status, disp, contrast):
         self.prev_btn = prev_btn
         self.next_btn = next_btn
         self.yes_btn = yes_btn
         self.no_btn = no_btn
         self.bkled = bkled
         self.bkled_status = bkled_status
+        self.disp = disp
+        self.contrast = contrast
 
     def toggleBkled(self, comm):
         if comm == "no":
@@ -78,7 +80,16 @@ class function(object):
             return "", "yes         Wait.."
         else:
             return "", "yes              "
-
+    def set_contrast(self,comm):
+        if comm == "yes":
+            if self.contrast > 40:
+                self.contrast = self.contrast - 1
+                self.disp.set_contrast(self.contrast)
+        if comm == "no":
+            if self.contrast < 70:
+                self.contrast = self.contrast + 1
+                self.disp.set_contrast(self.contrast)
+        return "","+              -"       
     def get_cpu(self,comm):
         cpu = str(psutil.cpu_freq().current)
         pert = str(psutil.cpu_percent()) 

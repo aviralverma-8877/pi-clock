@@ -75,8 +75,8 @@ disp = LCD.PCD8544(DC, RST, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE, max_speed_hz=40
 # Software SPI usage (defaults to bit-bang SPI interface):
 #disp = LCD.PCD8544(DC, RST, SCLK, DIN, CS)
 # Initialize library.
-
-disp.begin(contrast=55)
+contr=50
+disp.begin(contrast=contr)
 disp.clear()
 disp.display()
 
@@ -85,9 +85,9 @@ prev_btn = Button(27)
 next_btn = Button(18)
 yes_btn = Button(17)
 no_btn = Button(25)
-menu = ["       Time        ", "       Date        ","    Network      "," Temperature      ","        CPU      ","        RAM      ","       DISK     ","    Back LED    ","    Shutdown      ", "    Restart      "]
-img = ["time.bmp", "calendar.bmp","network.bmp","temperature.bmp","cpu.bmp","ram.bmp","disk.bmp","bkled.bmp","shutdown.bmp","restart.bmp"]
-func_list = ["functions.get_time","functions.get_date","functions.get_ip","functions.get_cpu_temperature","functions.get_cpu","functions.get_ram","functions.get_disk","functions.toggleBkled","functions.shutdown","functions.restart"]
+menu = ["       Time        ", "       Date        ","    Network      "," Temperature      ","        CPU      ","        RAM      ","       DISK     ","    Back LED    ","    Contrast    ","    Shutdown      ", "    Restart      "]
+img = ["time.bmp", "calendar.bmp","network.bmp","temperature.bmp","cpu.bmp","ram.bmp","disk.bmp","bkled.bmp","contrast.bmp","shutdown.bmp","restart.bmp"]
+func_list = ["functions.get_time","functions.get_date","functions.get_ip","functions.get_cpu_temperature","functions.get_cpu","functions.get_ram","functions.get_disk","functions.toggleBkled","functions.set_contrast","functions.shutdown","functions.restart"]
 head = None
 body = None
 msg = None
@@ -95,7 +95,7 @@ option = 0
 btn_pressed = False
 command = "no"
 count = 0
-functions = function(prev_btn,next_btn,yes_btn,no_btn, led, True)
+functions = function(prev_btn,next_btn,yes_btn,no_btn, led, True, disp, contr)
 
 while(True):
     mem = psutil.virtual_memory()
@@ -115,6 +115,8 @@ while(True):
             command = "yes"
         elif no_btn.is_pressed:
             command = "no"
+        else:
+            command = ""
     if functions.no_button_pressed():
         btn_pressed = False
     msg, body = eval(str(func_list[option])+"(\""+str(command)+"\")")
