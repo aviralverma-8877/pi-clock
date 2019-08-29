@@ -75,7 +75,7 @@ disp = LCD.PCD8544(DC, RST, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE, max_speed_hz=40
 # Software SPI usage (defaults to bit-bang SPI interface):
 #disp = LCD.PCD8544(DC, RST, SCLK, DIN, CS)
 # Initialize library.
-contr=49
+contr=52
 disp.begin(contrast=contr)
 disp.clear()
 disp.display()
