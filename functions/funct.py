@@ -61,15 +61,15 @@ class function(object):
     def get_time(self,comm):
         if comm == "yes":
             self.last_comm = comm
-            return str(datetime.now().strftime("%H:%M:%S")), "24hr      am/pm"
+            return str(datetime.now().strftime("%H:%M:%S")), "24hr       am/pm"
         elif comm == "no":
             self.last_comm = comm
-            return str(datetime.now().strftime("%I:%M:%S %p")), "24hr      am/pm" 
+            return str(datetime.now().strftime("%I:%M:%S %p")), "24hr       am/pm" 
         else:
             if self.last_comm == "yes":
-                return str(datetime.now().strftime("%H:%M:%S")), "24hr      am/pm"
+                return str(datetime.now().strftime("%H:%M:%S")), "24hr       am/pm"
             else:
-                return str(datetime.now().strftime("%I:%M:%S %p")), "24hr      am/pm" 
+                return str(datetime.now().strftime("%I:%M:%S %p")), "24hr       am/pm" 
 
     def get_date(self,format):
         return str(datetime.now().strftime("%d-%m-%Y\n %B")), str(datetime.now().strftime("%A"))
