@@ -25,6 +25,7 @@ class function(object):
         self.bkled_status = bkled_status
         self.disp = disp
         self.contrast = contrast
+        self.last_comm = "yes"
 
     def toggleBkled(self, comm):
         if comm == "no":
@@ -40,6 +41,7 @@ class function(object):
                 return "  ON","OFF           ON"
             else:
                 return "  OFF","OFF           ON"
+                
     def get_disk(self, comm):
         disk = psutil.disk_usage('/')
         free = str(round(float(disk.free)/(1024*1024*1024),1))
@@ -56,13 +58,18 @@ class function(object):
         except:
             return None
 
-    def get_time(self,format):
-        if format == "yes":
+    def get_time(self,comm):
+        if comm == "yes":
+            self.last_comm = comm
             return str(datetime.now().strftime("%H:%M:%S")), "24hr      am/pm"
-        else:
+        elif comm == "no":
+            self.last_comm = comm
             return str(datetime.now().strftime("%I:%M:%S %p")), "24hr      am/pm" 
-
-
+        else:
+            if self.last_comm == "yes":
+                return str(datetime.now().strftime("%H:%M:%S")), "24hr      am/pm"
+            else:
+                return str(datetime.now().strftime("%I:%M:%S %p")), "24hr      am/pm" 
 
     def get_date(self,format):
         return str(datetime.now().strftime("%d-%m-%Y\n %B")), str(datetime.now().strftime("%A"))
@@ -109,9 +116,16 @@ class function(object):
         temp_c = int(float(output[output.index('=') + 1:output.rindex("'")]))
         temp_f = int((temp_c*9/5)+32)
         if comm == "yes":
+            self.last_comm = comm
             return str(temp_f)+" F","F              C"
-        else:
+        elif comm == "no":
+            self.last_comm = comm
             return str(temp_c)+" C","F              C"
+        else:
+            if self.last_comm == "yes":
+                return str(temp_f)+" F","F              C"
+            elif self.last_comm == "no":
+                return str(temp_c)+" C","F              C"
 
     def get_ip(self,comm):
         IPAddr = self.get_ip_address('eth0')
