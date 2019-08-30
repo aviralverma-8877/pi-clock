@@ -76,17 +76,25 @@ class function(object):
 
     def shutdown(self,comm):
         if comm == "yes":
+            self.last_comm = "shutdown"
             os.system("shutdown -h now")
             return "", "yes         Wait.."
         else:
-            return "", "yes              "
+            if self.last_comm == "shutdown":
+                return "", "yes         Wait.."
+            else:
+                return "", "yes              "
 
     def restart(self,comm):
         if comm == "yes":
+            self.last_comm = "rebooting"
             os.system("reboot")
             return "", "yes         Wait.."
         else:
-            return "", "yes              "
+            if self.last_comm == "rebooting":
+                return "", "yes         Wait.."
+            else:
+                return "", "yes              "
     def set_contrast(self,comm):
         if comm == "yes":
             if self.contrast > 40:
