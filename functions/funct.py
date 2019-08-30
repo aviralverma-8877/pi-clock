@@ -74,6 +74,13 @@ class function(object):
     def get_date(self,format):
         return str(datetime.now().strftime("%d-%m-%Y\n %B")), str(datetime.now().strftime("%A"))
 
+    def set_volume(self, comm):
+        if comm == "yes":
+            os.system("alias volu='sudo amixer set PCM -- $[$(amixer get PCM|grep -o [0-9]*%|sed 's/%//')+5]%'")
+        elif comm == "no":
+            os.system("alias vold='sudo amixer set PCM -- $[$(amixer get PCM|grep -o [0-9]*%|sed 's/%//')-5]%'")
+        return "","+              -" 
+
     def shutdown(self,comm):
         if comm == "yes":
             self.last_comm = "shutdown"
