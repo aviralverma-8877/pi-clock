@@ -115,7 +115,7 @@ class function(object):
     def get_cpu(self,comm):
         cpu = str(psutil.cpu_freq().current)
         pert = str(psutil.cpu_percent()) 
-        return cpu+" GHz\n", "Util "+pert+" %"
+        return cpu+" MHz\n", "Util "+pert+" %"
 
     def get_ram(self,comm):
         mem = psutil.virtual_memory()
