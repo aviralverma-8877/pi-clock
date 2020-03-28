@@ -44,7 +44,7 @@ SPI_PORT = 0
 SPI_DEVICE = 0
 BKLED = 22
 led = LED(BKLED)
-led.on()
+led.off()
 
 # Raspberry Pi software SPI config:
 # SCLK = 4
