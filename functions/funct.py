@@ -1,15 +1,6 @@
-import time
 from datetime import datetime
 import psutil
-from gpiozero import LED
-from gpiozero import Button
-import Adafruit_Nokia_LCD as LCD
-import Adafruit_GPIO.SPI as SPI
-import math
 import socket
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
 from subprocess import PIPE, Popen
 import os
 import fcntl
