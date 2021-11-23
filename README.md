@@ -6,6 +6,7 @@ Enable SPI
 git clone https://github.com/aviralverma-8877/pi-clock.git
 sudo ./install.sh
 
+
 # Enable SPI
 sudo raspi-config
 
