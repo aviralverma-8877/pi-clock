@@ -2,9 +2,10 @@
 Raspberry pi clock
 
 Installation Steps:
-Enable SPI
-git clone https://github.com/aviralverma-8877/pi-clock.git
-sudo ./install.sh
+
+  1. Enable SPI
+  2. git clone https://github.com/aviralverma-8877/pi-clock.git
+  3. sudo ./install.sh
 
 
 # Enable SPI
