@@ -19,7 +19,7 @@ display = adafruit_pcd8544.PCD8544(spi, dc, cs, reset)
 display.bias = 5
 contr = 50
 display.contrast = contr
-display.fill(0)
+display.fill(1)
 display.show()
 
 # Button Def
