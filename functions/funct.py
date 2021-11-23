@@ -26,7 +26,7 @@ class function(object):
             self.bkled.value = False
             return "  OFF","OFF           ON"
         else:
-            if elf.bkled.value:
+            if self.bkled.value:
                 return "  ON","OFF           ON"
             else:
                 return "  OFF","OFF           ON"
