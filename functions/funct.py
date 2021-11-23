@@ -1,5 +1,6 @@
 from datetime import datetime
 import psutil
+from gpiozero import CPUTemperature
 import socket
 from subprocess import PIPE, Popen
 import os
@@ -114,10 +115,9 @@ class function(object):
 
     def get_cpu_temperature(self,comm):
         """get cpu temperature using vcgencmd"""
-        process = Popen(['vcgencmd', 'measure_temp'], stdout=PIPE)
-        output, _error = process.communicate()
-        temp_c = int(float(output[output.index('=') + 1:output.rindex("'")]))
-        temp_f = int((temp_c*9/5)+32)
+        cpu = CPUTemperature()
+        temp_c = float(cpu.temperature)
+        temp_f = float((temp_c*9/5)+32)
         if comm == "yes":
             self.last_comm = comm
             return str(temp_f)+" F","F              C"
