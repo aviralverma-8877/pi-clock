@@ -133,14 +133,9 @@ class function(object):
                 return str(temp_c)+" C","F              C"
 
     def get_ip(self,comm):
-        IPAddr = self.get_ip_address('eth0')
-        con = "Connection:\nEthernet"
-        if IPAddr == None:
-            IPAddr = self.get_ip_address('wlan0')
-            con = "Connection:\nWiFi"
-            if IPAddr == None:
-                IPAddr = "Not Connected"
-                con = ""
+        hostname = socket.gethostname()   
+        IPAddr = socket.gethostbyname(hostname)
+        con = "Local IP Address"
         return con, IPAddr
 
     def no_button_pressed(self):
