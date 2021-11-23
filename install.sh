@@ -9,3 +9,7 @@ apt-get install python3-pil
 pip3 install adafruit-circuitpython-pcd8544
 pip3 install psutil
 pip3 install gpiozero
+pip3 install pm2
+pm2 start main.py --interpreter python3
+pm2 save
+pm2 startup
