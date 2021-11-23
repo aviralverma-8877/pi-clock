@@ -77,7 +77,7 @@ while(True):
     draw.text((0,36), body, font=font)
     draw.text((25,13), msg, font=font)
     if count == 5:
-        disp.image(image)
+        display.image(image)
         display.show()
         count = 0
     count = count + 1
