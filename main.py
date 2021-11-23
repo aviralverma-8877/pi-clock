@@ -22,72 +22,56 @@
 import time
 from datetime import datetime
 import psutil
+
+import adafruit_pcd8544
+import board
+import busio
+import digitalio
+
 from gpiozero import LED
 from gpiozero import Button
-import Adafruit_Nokia_LCD as LCD
-import Adafruit_GPIO.SPI as SPI
 import math
 import socket
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
+from PIL import Image, ImageDraw, ImageFont
 from subprocess import PIPE, Popen
 import os
 import fcntl
 import struct
 from functions.funct import function
-# Raspberry Pi hardware SPI config:
 
-DC = 23
-RST = 24
-SPI_PORT = 0
-SPI_DEVICE = 0
-BKLED = 22
-led = LED(BKLED)
-led.off()
-
-# Raspberry Pi software SPI config:
-# SCLK = 4
-# DIN = 17
-# DC = 23
-# RST = 24
-# CS = 8
-
-
-
-# Beaglebone Black hardware SPI config:
-# DC = 'P9_15'
-# RST = 'P9_12'
-# SPI_PORT = 1
-# SPI_DEVICE = 0
-
-
-
-# Beaglebone Black software SPI config:
-# DC = 'P9_15'
-# RST = 'P9_12'
-# SCLK = 'P8_7'
-# DIN = 'P8_9'
-# CS = 'P8_11'
+spi = busio.SPI(board.SCK, MOSI=board.MOSI)
+dc = digitalio.DigitalInOut(board.D23) # data/command
+cs = digitalio.DigitalInOut(board.CE0) # Chip select
+reset = digitalio.DigitalInOut(board.D24) # reset
+backlight = digitalio.DigitalInOut(board.D22)
+backlight.switch_to_output()
+backlight.value = False
 
 # Hardware SPI usage:
-disp = LCD.PCD8544(DC, RST, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE, max_speed_hz=4000000))
+display = adafruit_pcd8544.PCD8544(spi, dc, cs, reset)
 # Software SPI usage (defaults to bit-bang SPI interface):
 #disp = LCD.PCD8544(DC, RST, SCLK, DIN, CS)
 # Initialize library.
-contr=53
-disp.begin(contrast=contr)
-disp.clear()
-disp.display()
+display.bias = 5
+display.contrast = 50
+display.fill(0)
+display.show()
 
 # Button Def
-prev_btn = Button(27)
-next_btn = Button(18)
-yes_btn = Button(17)
-no_btn = Button(25)
+prev_btn = digitalio.DigitalInOut(board.D27)
+next_btn = digitalio.DigitalInOut(board.D18)
+yes_btn = digitalio.DigitalInOut(board.D17)
+no_btn = digitalio.DigitalInOut(board.D25)
+
+prev_btn.switch_to_input()
+next_btn.switch_to_input()
+yes_btn.switch_to_input()
+no_btn.switch_to_input()
+
 menu = ["       Time        ", "       Date        ","    Network      "," Temperature      ","        CPU      ","        RAM      ","       DISK     ","    Back LED    ","    Contrast    ","      Volume    ","    Shutdown      ", "    Restart      "]
 img = ["time.bmp", "calendar.bmp","network.bmp","temperature.bmp","cpu.bmp","ram.bmp","disk.bmp","bkled.bmp","contrast.bmp","volume.bmp","shutdown.bmp","restart.bmp"]
 func_list = ["functions.get_time","functions.get_date","functions.get_ip","functions.get_cpu_temperature","functions.get_cpu","functions.get_ram","functions.get_disk","functions.toggleBkled","functions.set_contrast","functions.set_volume","functions.shutdown","functions.restart"]
+
 head = None
 body = None
 msg = None
@@ -95,25 +79,25 @@ option = 0
 btn_pressed = False
 command = "no"
 count = 0
-functions = function(prev_btn,next_btn,yes_btn,no_btn, led, True, disp, contr)
+functions = function(prev_btn,next_btn,yes_btn,no_btn, led, disp, contr)
 
 while(True):
     mem = psutil.virtual_memory()
     if not btn_pressed:
         btn_pressed = True
-        if next_btn.is_pressed:
+        if not next_btn.value:
             command = ""
             option = option + 1
             if option == len(menu):
                 option = 0
-        elif prev_btn.is_pressed:
+        elif not prev_btn.value:
             command = ""
             option = option - 1
             if option == -1:
                 option = int(len(menu)-1)
-        if yes_btn.is_pressed:
+        if not yes_btn.value:
             command = "yes"
-        elif no_btn.is_pressed:
+        elif not no_btn.value:
             command = "no"
         else:
             command = ""
@@ -138,7 +122,7 @@ while(True):
     # Display image.
     if count == 5:
         disp.image(image)
-        disp.display()
+        display.show()
         count = 0
     count = count + 1
     time.sleep(0.05)

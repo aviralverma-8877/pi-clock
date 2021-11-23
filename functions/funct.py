@@ -16,28 +16,25 @@ import fcntl
 import struct
 
 class function(object):
-    def __init__(self, prev_btn, next_btn, yes_btn, no_btn, bkled, bkled_status, disp, contrast):
+    def __init__(self, prev_btn, next_btn, yes_btn, no_btn, bkled, disp, contrast):
         self.prev_btn = prev_btn
         self.next_btn = next_btn
         self.yes_btn = yes_btn
         self.no_btn = no_btn
         self.bkled = bkled
-        self.bkled_status = bkled_status
         self.disp = disp
         self.contrast = contrast
         self.last_comm = "yes"
 
     def toggleBkled(self, comm):
         if comm == "no":
-            self.bkled.on()
-            self.bkled_status = True
+            self.bkled.value = True
             return "  ON","OFF           ON"
         elif comm == "yes":
-            self.bkled.off()
-            self.bkled_status = False
+            self.bkled.value = False
             return "  OFF","OFF           ON"
         else:
-            if self.bkled_status:
+            if elf.bkled.value:
                 return "  ON","OFF           ON"
             else:
                 return "  OFF","OFF           ON"
@@ -154,9 +151,9 @@ class function(object):
         return con, IPAddr
 
     def no_button_pressed(self):
-        if not self.next_btn.is_pressed:
-            if not self.prev_btn.is_pressed:
-                if not self.yes_btn.is_pressed:
-                    if not self.no_btn.is_pressed:
+        if self.next_btn.value:
+            if self.prev_btn.value:
+                if self.yes_btn.value:
+                    if self.no_btn.value:
                         return True
         return False
