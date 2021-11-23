@@ -70,7 +70,7 @@ while(True):
         btn_pressed = False
     msg, body = eval(str(func_list[option])+"(\""+str(command)+"\")")
     head = menu[option]
-    image = Image.open('images/'+img[option]).resize((LCD.LCDWIDTH, LCD.LCDHEIGHT), Image.ANTIALIAS).convert('1')
+    image = Image.open('images/'+img[option]).resize((display.width, display.height), Image.ANTIALIAS).convert('1')
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype('fonts/EnterCommand.ttf', 15)
     draw.text((0,1), head, font=font)
