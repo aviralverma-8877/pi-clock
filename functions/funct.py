@@ -94,11 +94,11 @@ class function(object):
         if comm == "yes":
             if self.contrast > 40:
                 self.contrast = self.contrast - 1
-                self.disp.set_contrast(self.contrast)
+                self.disp.contrast = self.contrast
         if comm == "no":
             if self.contrast < 70:
                 self.contrast = self.contrast + 1
-                self.disp.set_contrast(self.contrast)
+                self.disp.contrast = self.contrast
         return "","+              -"       
     def get_cpu(self,comm):
         cpu = str(psutil.cpu_freq().current)

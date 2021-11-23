@@ -17,7 +17,8 @@ backlight.value = False
 
 display = adafruit_pcd8544.PCD8544(spi, dc, cs, reset)
 display.bias = 5
-display.contrast = 50
+contr = 50
+display.contrast = contr
 display.fill(0)
 display.show()
 
@@ -43,7 +44,7 @@ option = 0
 btn_pressed = False
 command = "no"
 count = 0
-functions = function(prev_btn,next_btn,yes_btn,no_btn, led, disp, contr)
+functions = function(prev_btn,next_btn,yes_btn,no_btn, backlight, display, contr)
 
 while(True):
     mem = psutil.virtual_memory()
