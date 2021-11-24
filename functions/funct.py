@@ -37,17 +37,6 @@ class function(object):
         total = str(round(float(disk.total)/(1024*1024*1024),1))
         return "Free "+free+" GB","Total "+total+" GB"
     
-    def get_ip_address(self, ifname):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            return socket.inet_ntoa(fcntl.ioctl(
-                s.fileno(),
-                0x8915,  # SIOCGIFADDR
-                struct.pack('256s', ifname[:15])
-            )[20:24])
-        except:
-            return None
-
     def get_time(self,comm):
         if comm == "yes":
             self.last_comm = comm
@@ -134,14 +123,11 @@ class function(object):
                 return str(temp_c)+" C","F              C"
 
     def get_ip(self,comm):
-        IPAddr = self.get_ip_address('eth0')
-        con = "Connection:\nEthernet"
-        if IPAddr == None:
-            IPAddr = self.get_ip_address('wlan0')
-            con = "Connection:\nWiFi"
-            if IPAddr == None:
-                IPAddr = "Not Connected"
-                con = ""
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        IPAddr = s.getsockname()[0]
+        con = "Local IP"
+        s.close()
         return con, IPAddr
 
     def no_button_pressed(self):
