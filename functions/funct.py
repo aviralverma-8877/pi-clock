@@ -130,8 +130,8 @@ class function(object):
             con = "Local IP"
             s.close()
         except:
-            con = "Not Connected"
-            IPAddr = ""
+            con = "Disconnected"
+            IPAddr = "Not Available"
         return con, IPAddr
 
     def no_button_pressed(self):
