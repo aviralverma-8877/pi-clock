@@ -2,6 +2,9 @@
 
 apt-get update
 apt-get upgrade -y
+apt-get install git -y
+git clone https://github.com/aviralverma-8877/pi-clock.git
+cd pi-clock
 apt-get install python3-pip -y
 apt-get install ttf-dejavu -y
 apt-get install python3-pil -y
