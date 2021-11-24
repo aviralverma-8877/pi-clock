@@ -108,8 +108,8 @@ class function(object):
     def get_cpu_temperature(self,comm):
         """get cpu temperature using vcgencmd"""
         cpu = CPUTemperature()
-        temp_c = float(cpu.temperature)
-        temp_f = float((temp_c*9/5)+32)
+        temp_c = float("{:.2f}".format(cpu.temperature))
+        temp_f = float("{:.2f}".format((temp_c*9/5)+32))
         if comm == "yes":
             self.last_comm = comm
             return str(temp_f)+" F","F              C"
