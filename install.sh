@@ -10,7 +10,7 @@ pip3 install gpiozero
 git clone https://github.com/aviralverma-8877/pi-clock.git
 cd pi-clock
 crontab -l > crontab_new 
-echo "@reboot cd $PWD && python3 main.py" > crontab_new
+echo "@reboot cd $PWD && sudo python3 main.py" > crontab_new
 crontab crontab_new
 rm crontab_new
 reboot
