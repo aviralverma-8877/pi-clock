@@ -4,7 +4,7 @@ Raspberry pi clock
 Installation Steps:
 
   1. Enable SPI
-  2. wget https://raw.githubusercontent.com/aviralverma-8877/pi-clock/master/install.sh && sudo ./install.sh
+  2. '''wget https://raw.githubusercontent.com/aviralverma-8877/pi-clock/master/install.sh && sudo ./install.sh'''
 
 # Enable SPI
 sudo raspi-config
