@@ -36,6 +36,7 @@ class function(object):
         free = str(round(float(disk.free)/(1024*1024*1024),1))
         total = str(round(float(disk.total)/(1024*1024*1024),1))
         return "Free "+free+" GB","Total "+total+" GB"
+    
     def get_ip_address(self, ifname):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -133,9 +134,14 @@ class function(object):
                 return str(temp_c)+" C","F              C"
 
     def get_ip(self,comm):
-        hostname = socket.gethostname()   
-        IPAddr = socket.gethostbyname(hostname)
-        con = "Local IP Address"
+        IPAddr = self.get_ip_address('eth0')
+        con = "Connection:\nEthernet"
+        if IPAddr == None:
+            IPAddr = self.get_ip_address('wlan0')
+            con = "Connection:\nWiFi"
+            if IPAddr == None:
+                IPAddr = "Not Connected"
+                con = ""
         return con, IPAddr
 
     def no_button_pressed(self):
