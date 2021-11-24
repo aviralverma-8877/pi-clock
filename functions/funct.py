@@ -123,11 +123,15 @@ class function(object):
                 return str(temp_c)+" C","F              C"
 
     def get_ip(self,comm):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        IPAddr = s.getsockname()[0]
-        con = "Local IP"
-        s.close()
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            IPAddr = s.getsockname()[0]
+            con = "Local IP"
+            s.close()
+        except:
+            con = "Not Connected"
+            IPAddr = ""
         return con, IPAddr
 
     def no_button_pressed(self):
