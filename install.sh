@@ -3,7 +3,7 @@
 apt update -y
 apt autoremove -y
 apt update --fix-missing -y
-apt install git python3-pip ttf-dejavu python3-pil npm -y
+apt install git python3-pip python3-pil npm -y
 git clone https://github.com/aviralverma-8877/pi-clock.git
 cd pi-clock
 npm install pm2 -g
