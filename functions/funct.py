@@ -130,7 +130,7 @@ class function(object):
             con = "Local IP"
             s.close()
         except:
-            con = "Disconnected"
+            con = "Link Down"
             IPAddr = "Not Available"
         return con, IPAddr
 
