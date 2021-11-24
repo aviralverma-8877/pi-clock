@@ -1,9 +1,5 @@
 #!/bin/sh
 
-apt-get update
-apt-get upgrade -y
-apt-get autoremove -y
-apt-get --fix-missing -y
 apt-get install git -y
 git clone https://github.com/aviralverma-8877/pi-clock.git
 cd pi-clock
