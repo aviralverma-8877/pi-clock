@@ -1,13 +1,14 @@
 #!/bin/sh
 
+apt update
 apt autoremove
-apt-get install git -y
+apt install git -y
 git clone https://github.com/aviralverma-8877/pi-clock.git
 cd pi-clock
-apt-get install python3-pip -y
-apt-get install ttf-dejavu -y
-apt-get install python3-pil -y
-apt-get install npm -y
+apt install python3-pip -y
+apt install ttf-dejavu -y
+apt install python3-pil -y
+apt install npm -y
 npm install pm2 -g
 pip3 install adafruit-circuitpython-pcd8544
 pip3 install psutil
