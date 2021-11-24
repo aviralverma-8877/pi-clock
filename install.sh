@@ -11,4 +11,5 @@ pip3 install psutil
 pip3 install gpiozero
 touch /var/spool/cron/job
 echo "@reboot cd $PWD && python3 main.py" > /var/spool/cron/job
+chmod 600 /var/spool/cron/job
 reboot
