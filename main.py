@@ -107,7 +107,8 @@ while(True):
             command = ""
     if functions.no_button_pressed():
         btn_pressed = False
-    msg, body = func_list[option](command)
+    method = func_list[option]
+    msg, body = method(command)
     head = menu[option]
     image = Image.open('images/'+img[option]).resize((display.width, display.height), Image.ANTIALIAS).convert('1')
     draw = ImageDraw.Draw(image)
