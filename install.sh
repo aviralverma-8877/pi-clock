@@ -1,5 +1,6 @@
 #!/bin/sh
 
+cd ~
 apt update -y
 apt autoremove -y
 apt update --fix-missing -y
