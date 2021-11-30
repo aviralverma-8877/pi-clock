@@ -63,18 +63,18 @@ img = [
     "restart.bmp"]
 
 func_list = [
-    "function.get_time",
-    "function.get_date",
-    "function.get_ip",
-    "function.get_cpu_temperature",
-    "function.get_cpu",
-    "function.get_ram",
-    "function.get_disk",
-    "function.toggleBkled",
-    "function.set_contrast",
-    "function.set_volume",
-    "function.shutdown",
-    "function.restart"]
+    "functions.get_time",
+    "functions.get_date",
+    "functions.get_ip",
+    "functions.get_cpu_temperature",
+    "functions.get_cpu",
+    "functions.get_ram",
+    "functions.get_disk",
+    "functions.toggleBkled",
+    "functions.set_contrast",
+    "functions.set_volume",
+    "functions.shutdown",
+    "functions.restart"]
 
 head = None
 body = None
