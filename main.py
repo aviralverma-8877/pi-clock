@@ -63,18 +63,18 @@ img = [
     "restart.bmp"]
 
 func_list = [
-    "functions.get_time",
-    "functions.get_date",
-    "functions.get_ip",
-    "functions.get_cpu_temperature",
-    "functions.get_cpu",
-    "functions.get_ram",
-    "functions.get_disk",
-    "functions.toggleBkled",
-    "functions.set_contrast",
-    "functions.set_volume",
-    "functions.shutdown",
-    "functions.restart"]
+    function.get_time,
+    function.get_date,
+    function.get_ip,
+    function.get_cpu_temperature,
+    function.get_cpu,
+    function.get_ram,
+    function.get_disk,
+    function.toggleBkled,
+    function.set_contrast,
+    function.set_volume,
+    function.shutdown,
+    function.restart]
 
 head = None
 body = None
@@ -107,7 +107,7 @@ while(True):
             command = ""
     if functions.no_button_pressed():
         btn_pressed = False
-    msg, body = eval(str(func_list[option])+"(\""+str(command)+"\")")
+    msg, body = func_list[option](command)
     head = menu[option]
     image = Image.open('images/'+img[option]).resize((display.width, display.height), Image.ANTIALIAS).convert('1')
     draw = ImageDraw.Draw(image)
