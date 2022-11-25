@@ -1,0 +1,11 @@
+[Unit]
+Description=Nokia 5110 LCD based clock
+
+[Service]
+User=root
+WorkingDirectory=/root/pi-clock
+ExecStart=main
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
