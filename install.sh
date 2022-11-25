@@ -16,7 +16,7 @@ sudo raspi-config nonint do_spi 0
 git clone https://github.com/aviralverma-8877/pi-clock.git
 cd pi-clock
 chmod 777 pi_clock.service
-ln -s pi_clock.service /etc/systemd/system/pi_clock.service
+ln -s $PWD/pi_clock.service /etc/systemd/system/pi_clock.service
 sudo systemctl daemon-reload
 sudo systemctl start pi_clock.service
 sudo systemctl enable pi_clock.service
