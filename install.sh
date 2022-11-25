@@ -20,3 +20,4 @@ chmod 777 /etc/systemd/system/pi_clock.service
 sudo systemctl daemon-reload
 sudo systemctl start pi_clock.service
 sudo systemctl enable pi_clock.service
+sudo rm install.sh
