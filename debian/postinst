@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+sudo raspi-config nonint do_spi 0
+chmod 777 /usr/lib/python3/dist-packages/pi-clock/pi_clock.service
+ln -s /usr/lib/python3/dist-packages/pi-clock/pi_clock.service /etc/systemd/system/pi_clock.service
+sudo systemctl daemon-reload
+sudo systemctl start pi_clock.service
+sudo systemctl enable pi_clock.service

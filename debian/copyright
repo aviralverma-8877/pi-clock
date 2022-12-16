@@ -1,0 +1,9 @@
+Format: http://dep.debian.net/deps/dep5
+Upstream-Name: pi-clock
+Source:
+
+
+Files: *
+Copyright: 2013 myproj. All rights reserved.
+License: Limited Use Software License Agreement
+ License Text Here
