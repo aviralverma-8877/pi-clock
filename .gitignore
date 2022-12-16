@@ -1,0 +1,4 @@
+debian/files
+debian/pi-clock
+debian/pi-clock.debhelper.log
+debian/pi-clock.substvars
