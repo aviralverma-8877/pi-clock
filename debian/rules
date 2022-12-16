@@ -1,4 +1,10 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@ --python /usr/bin/python3.7
+	dh $@ --with-systemd
+override_dh_auto_install:
+	dh_auto_install
+	dh_systemd_enable || true
+	dh_systemd_start || true
+override_dh_installinit:
+	true

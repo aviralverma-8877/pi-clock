@@ -2,7 +2,6 @@
 Description=Nokia 5110 LCD based clock
 
 [Service]
-User=root
 WorkingDirectory=/usr/lib/python3/dist-packages/pi-clock/
 ExecStart=/usr/bin/python3 /usr/lib/python3/dist-packages/pi-clock/main
 Restart=always

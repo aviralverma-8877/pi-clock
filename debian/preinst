@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+sudo raspi-config nonint do_spi 0
+
