@@ -39,6 +39,7 @@ no_btn.switch_to_input()
 menu = [
     "       Time      ", 
     "       Date      ",
+    "      Upgrade    ",
     "      Network    ",
     "    Temperature  ",
     "        CPU      ",
@@ -53,6 +54,7 @@ menu = [
 img = [
     "time.bmp", 
     "calendar.bmp",
+    "upgrade.bmp",
     "network.bmp",
     "temperature.bmp",
     "cpu.bmp",
@@ -67,6 +69,7 @@ img = [
 func_list = [
     "functions.get_time",
     "functions.get_date",
+    "functions.sys_upgrade",
     "functions.get_ip",
     "functions.get_cpu_temperature",
     "functions.get_cpu",

@@ -2,10 +2,23 @@ from datetime import datetime
 import psutil
 from gpiozero import CPUTemperature
 import socket
-from subprocess import PIPE, Popen
 import os
-import fcntl
-import struct
+import threading
+import apt
+import apt.progress
+
+CACHE = apt.Cache()
+CACHE.update()
+CACHE.open(None)
+TOTAL_PKG = 0
+UPGRADABLE_PKG = 0
+UPDATE_IN_PROGRESS = False
+UPDATE_PROGRESS = 0
+
+for pkg in list(CACHE):
+    TOTAL_PKG += 1
+    if pkg.is_upgradable:
+        UPGRADABLE_PKG += 1
 
 class function(object):
     def __init__(self, prev_btn, next_btn, yes_btn, no_btn, bkled, disp, contrast):
@@ -30,7 +43,48 @@ class function(object):
                 return "  ON","OFF           ON"
             else:
                 return "  OFF","OFF           ON"
-                
+    
+    def sys_upgrade(self, comm):
+        global UPDATE_IN_PROGRESS
+        if UPDATE_IN_PROGRESS:
+            return f"T : {TOTAL_PKG}\nU : {UPGRADABLE_PKG}", "In Progress..."
+        if comm == "yes":
+            def update_thread():
+                global TOTAL_PKG, UPGRADABLE_PKG, UPDATE_IN_PROGRESS
+                total=0
+                upgradabale_pkg=0
+                UPDATE_IN_PROGRESS = True
+                CACHE.update()
+                CACHE.open(None)
+                for pkg in list(CACHE):
+                    total += 1
+                    if pkg.is_upgradable:
+                        upgradabale_pkg += 1
+                TOTAL_PKG = total
+                UPGRADABLE_PKG = upgradabale_pkg
+                UPDATE_IN_PROGRESS = False
+            x = threading.Thread(target=update_thread)
+            x.start()
+        elif comm == "no":
+            def upgrade_thread():
+                global TOTAL_PKG, UPGRADABLE_PKG, UPDATE_IN_PROGRESS
+                total=0
+                upgradabale_pkg=0
+                UPDATE_IN_PROGRESS = True
+                CACHE.update()
+                CACHE.open(None)
+                CACHE.upgrade(True)
+                CACHE.commit()
+                for pkg in list(CACHE):
+                    total += 1
+                    if pkg.is_upgradable:
+                        upgradabale_pkg += 1
+                TOTAL_PKG = total
+                UPGRADABLE_PKG = upgradabale_pkg
+                UPDATE_IN_PROGRESS = False
+            x = threading.Thread(target=upgrade_thread)
+            x.start()
+        return f"T : {TOTAL_PKG}\nU : {UPGRADABLE_PKG}", "Update  Upgrade"
     def get_disk(self, comm):
         disk = psutil.disk_usage('/')
         free = str(round(float(disk.free)/(1024*1024*1024),1))
