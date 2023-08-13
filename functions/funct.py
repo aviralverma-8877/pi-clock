@@ -84,7 +84,7 @@ class function(object):
                 UPDATE_IN_PROGRESS = False
             x = threading.Thread(target=upgrade_thread)
             x.start()
-        return f"T : {TOTAL_PKG}\nU : {UPGRADABLE_PKG}", "Upd        Upg"
+        return f"T : {TOTAL_PKG}\nU : {UPGRADABLE_PKG}", "Upd         Upg"
     def get_disk(self, comm):
         disk = psutil.disk_usage('/')
         free = str(round(float(disk.free)/(1024*1024*1024),1))
