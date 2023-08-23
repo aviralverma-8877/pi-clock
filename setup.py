@@ -1,5 +1,6 @@
 import os, sys, site
 from setuptools import setup
+from setuptools.command.develop import develop
 from setuptools.command.install import install
 
 def binaries_directory():
@@ -20,6 +21,18 @@ def binaries_directory():
         if os.path.exists(path):
             return path
     return None
+
+class PostDevelopCommand(develop):
+    """Post-installation for development mode."""
+    def run(self):
+        develop.run(self)
+        # PUT YOUR POST-INSTALL SCRIPT HERE or CALL A FUNCTION
+        os.system(f"sudo raspi-config nonint do_spi 0")
+        os.system(f"sudo rm /etc/systemd/system/pi_clock.service")
+        os.system(f"ln -s {binaries_directory()}/pi_clock/pi_clock.service /etc/systemd/system/pi_clock.service")
+        os.system(f"sudo systemctl daemon-reload")
+        os.system(f"sudo systemctl start pi_clock.service")
+        os.system(f"sudo systemctl enable pi_clock.service")
 
 class PostInstallCommand(install):
     """Post-installation for installation mode."""
@@ -51,5 +64,5 @@ setup(
     ],
     install_requires=["adafruit-circuitpython-pcd8544", "psutil", "gpiozero", "python-apt", "Pillow"],
     python_requires=">=3.7",
-    cmdclass={'install': PostInstallCommand}
+    cmdclass={'develop': PostDevelopCommand,'install': PostInstallCommand}
 )
