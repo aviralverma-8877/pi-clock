@@ -29,7 +29,7 @@ class PostDevelopCommand(develop):
         # PUT YOUR POST-INSTALL SCRIPT HERE or CALL A FUNCTION
         os.system(f"sudo raspi-config nonint do_spi 0")
         os.system(f"sudo rm /etc/systemd/system/pi_clock.service")
-        os.system(f"ln -s {binaries_directory()}/pi_clock/pi_clock.service /etc/systemd/system/pi_clock.service")
+        os.system(f"ln -s {binaries_directory()}pi_clock/pi_clock.service /etc/systemd/system/pi_clock.service")
         os.system(f"sudo systemctl daemon-reload")
         os.system(f"sudo systemctl start pi_clock.service")
         os.system(f"sudo systemctl enable pi_clock.service")
@@ -41,7 +41,7 @@ class PostInstallCommand(install):
         # PUT YOUR POST-INSTALL SCRIPT HERE or CALL A FUNCTION
         os.system(f"sudo raspi-config nonint do_spi 0")
         os.system(f"sudo rm /etc/systemd/system/pi_clock.service")
-        os.system(f"ln -s {binaries_directory()}/pi_clock/pi_clock.service /etc/systemd/system/pi_clock.service")
+        os.system(f"ln -s {binaries_directory()}pi_clock/pi_clock.service /etc/systemd/system/pi_clock.service")
         os.system(f"sudo systemctl daemon-reload")
         os.system(f"sudo systemctl start pi_clock.service")
         os.system(f"sudo systemctl enable pi_clock.service")
