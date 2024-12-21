@@ -9,10 +9,10 @@ apt update -y
 apt autoremove -y
 apt update --fix-missing -y
 apt install git python3-pip python3-pil -y
-pip3 install adafruit-circuitpython-pcd8544
-pip3 install psutil
-pip3 install gpiozero
-pip3 install python-apt
+pip3 install adafruit-circuitpython-pcd8544 --break-system-packages
+pip3 install psutil --break-system-packages
+pip3 install gpiozero --break-system-packages
+pip3 install python-apt --break-system-packages
 sudo raspi-config nonint do_spi 0
 DIR="pi-clock"
 if [ -d "$DIR" ]; then
