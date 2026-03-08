@@ -136,6 +136,36 @@ sudo systemctl disable pi_clock.service
 
 ## Troubleshooting
 
+### Display stuck on "Restart" screen or menu auto-scrolling
+
+**Symptom**: Display shows "Restart" immediately after startup, or menu cycles through options rapidly without button presses.
+
+**Cause**: Missing pull-up resistors on button GPIO pins (fixed in v2.0.1+)
+
+**Quick Fix**:
+```bash
+sudo systemctl stop pi_clock.service
+sudo nano /opt/pi-clock/main
+
+# Find lines 34-37 and change from:
+#   prev_btn.switch_to_input()
+# To:
+#   prev_btn.switch_to_input(pull=digitalio.Pull.UP)
+# (Apply to all 4 button lines)
+
+# Save (Ctrl+O, Enter) and exit (Ctrl+X)
+sudo systemctl restart pi_clock.service
+```
+
+See [BUTTON-FIX-README.md](BUTTON-FIX-README.md) for detailed instructions.
+
+**To diagnose**:
+```bash
+sudo systemctl stop pi_clock.service
+cd /opt/pi-clock
+sudo python3 diagnose.py
+```
+
 ### Display not working
 - Verify SPI is enabled: `sudo raspi-config nonint do_spi 0`
 - Check wiring connections
@@ -155,7 +185,7 @@ journalctl -u pi_clock.service -n 50
 ### Buttons not responding
 - Verify GPIO pin connections
 - Check button wiring (buttons should connect GPIO to Ground)
-- Ensure pull-up resistors are configured (handled by gpiozero)
+- Run diagnostic: `sudo python3 /opt/pi-clock/diagnose.py`
 
 ## Development
 
