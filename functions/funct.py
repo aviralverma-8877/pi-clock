@@ -8,18 +8,37 @@ import threading
 import apt
 import apt.progress
 
-CACHE = apt.Cache()
-CACHE.update()
-CACHE.open(None)
+CACHE = None
 TOTAL_PKG = 0
 UPGRADABLE_PKG = 0
 UPDATE_IN_PROGRESS = False
 UPDATE_PROGRESS = 0
+CACHE_INITIALIZED = False
 
-for pkg in list(CACHE):
-    TOTAL_PKG += 1
-    if pkg.is_upgradable:
-        UPGRADABLE_PKG += 1
+def initialize_cache():
+    """Initialize APT cache lazily to avoid blocking on startup"""
+    global CACHE, TOTAL_PKG, UPGRADABLE_PKG, CACHE_INITIALIZED
+    if CACHE_INITIALIZED:
+        return True
+
+    try:
+        CACHE = apt.Cache()
+        CACHE.open(None)
+
+        total = 0
+        upgradable = 0
+        for pkg in list(CACHE):
+            total += 1
+            if pkg.is_upgradable:
+                upgradable += 1
+
+        TOTAL_PKG = total
+        UPGRADABLE_PKG = upgradable
+        CACHE_INITIALIZED = True
+        return True
+    except Exception as e:
+        print(f"Error initializing APT cache: {e}")
+        return False
 
 
 class function(object):
@@ -32,6 +51,10 @@ class function(object):
         self.disp = disp
         self.contrast = contrast
         self.last_comm = "yes"
+        # Cache socket connection for IP check
+        self._last_ip_check = 0
+        self._cached_ip = "Checking..."
+        self._cached_ip_status = "Checking..."
 
     def toggleBkled(self, comm):
         if comm == "no":
@@ -47,48 +70,62 @@ class function(object):
                 return "  OFF", "OFF           ON"
 
     def sys_upgrade(self, comm):
-        global UPDATE_IN_PROGRESS
+        global UPDATE_IN_PROGRESS, CACHE_INITIALIZED
+
+        # Initialize cache if not already done
+        if not CACHE_INITIALIZED:
+            if not initialize_cache():
+                return "Cache Error", "Try again later"
+
         if UPDATE_IN_PROGRESS:
             return f"T : {TOTAL_PKG}\nU : {UPGRADABLE_PKG}", "In Progress..."
         if comm == "yes":
 
             def update_thread():
-                global TOTAL_PKG, UPGRADABLE_PKG, UPDATE_IN_PROGRESS
+                global TOTAL_PKG, UPGRADABLE_PKG, UPDATE_IN_PROGRESS, CACHE
                 total = 0
-                upgradabale_pkg = 0
+                upgradable_pkg = 0
                 UPDATE_IN_PROGRESS = True
-                CACHE.update()
-                CACHE.open(None)
-                for pkg in list(CACHE):
-                    total += 1
-                    if pkg.is_upgradable:
-                        upgradabale_pkg += 1
-                TOTAL_PKG = total
-                UPGRADABLE_PKG = upgradabale_pkg
-                UPDATE_IN_PROGRESS = False
-                self.alert()
+                try:
+                    CACHE.update()
+                    CACHE.open(None)
+                    for pkg in list(CACHE):
+                        total += 1
+                        if pkg.is_upgradable:
+                            upgradable_pkg += 1
+                    TOTAL_PKG = total
+                    UPGRADABLE_PKG = upgradable_pkg
+                except Exception as e:
+                    print(f"Error updating cache: {e}")
+                finally:
+                    UPDATE_IN_PROGRESS = False
+                    self.alert()
 
             x = threading.Thread(target=update_thread)
             x.start()
         elif comm == "no":
 
             def upgrade_thread():
-                global TOTAL_PKG, UPGRADABLE_PKG, UPDATE_IN_PROGRESS
+                global TOTAL_PKG, UPGRADABLE_PKG, UPDATE_IN_PROGRESS, CACHE
                 total = 0
-                upgradabale_pkg = 0
+                upgradable_pkg = 0
                 UPDATE_IN_PROGRESS = True
-                CACHE.update()
-                CACHE.open(None)
-                CACHE.upgrade(True)
-                CACHE.commit()
-                for pkg in list(CACHE):
-                    total += 1
-                    if pkg.is_upgradable:
-                        upgradabale_pkg += 1
-                TOTAL_PKG = total
-                UPGRADABLE_PKG = upgradabale_pkg
-                UPDATE_IN_PROGRESS = False
-                self.alert()
+                try:
+                    CACHE.update()
+                    CACHE.open(None)
+                    CACHE.upgrade(True)
+                    CACHE.commit()
+                    for pkg in list(CACHE):
+                        total += 1
+                        if pkg.is_upgradable:
+                            upgradable_pkg += 1
+                    TOTAL_PKG = total
+                    UPGRADABLE_PKG = upgradable_pkg
+                except Exception as e:
+                    print(f"Error upgrading packages: {e}")
+                finally:
+                    UPDATE_IN_PROGRESS = False
+                    self.alert()
 
             x = threading.Thread(target=upgrade_thread)
             x.start()
@@ -96,37 +133,36 @@ class function(object):
 
     def get_disk(self, comm):
         disk = psutil.disk_usage("/")
-        free = str(round(float(disk.free) / (1024 * 1024 * 1024), 1))
-        total = str(round(float(disk.total) / (1024 * 1024 * 1024), 1))
-        return "Free " + free + " GB", "Total " + total + " GB"
+        free = round(disk.free / (1024 ** 3), 1)
+        total = round(disk.total / (1024 ** 3), 1)
+        return f"Free {free} GB", f"Total {total} GB"
 
     def get_time(self, comm):
         if comm == "yes":
             self.last_comm = comm
-            return str(datetime.now().strftime("%H:%M:%S")), "24hr      am/pm"
         elif comm == "no":
             self.last_comm = comm
-            return str(datetime.now().strftime("%I:%M:%S %p")), "24hr      am/pm"
+
+        now = datetime.now()
+        if self.last_comm == "yes":
+            return now.strftime("%H:%M:%S"), "24hr      am/pm"
         else:
-            if self.last_comm == "yes":
-                return str(datetime.now().strftime("%H:%M:%S")), "24hr      am/pm"
-            else:
-                return str(datetime.now().strftime("%I:%M:%S %p")), "24hr      am/pm"
+            return now.strftime("%I:%M:%S %p"), "24hr      am/pm"
 
     def get_date(self, format):
-        return str(datetime.now().strftime("%d-%m-%Y\n %B")), str(
-            datetime.now().strftime("%A")
-        )
+        now = datetime.now()
+        return now.strftime("%d-%m-%Y\n %B"), now.strftime("%A")
 
     def set_volume(self, comm):
-        if comm == "yes":
-            os.system(
-                "alias volu='sudo amixer set PCM -- $[$(amixer get PCM|grep -o [0-9]*%|sed 's/%//')+5]%'"
-            )
-        elif comm == "no":
-            os.system(
-                "alias vold='sudo amixer set PCM -- $[$(amixer get PCM|grep -o [0-9]*%|sed 's/%//')-5]%'"
-            )
+        try:
+            if comm == "yes":
+                # Increase volume by 5%
+                os.system("amixer sset PCM 5%+")
+            elif comm == "no":
+                # Decrease volume by 5%
+                os.system("amixer sset PCM 5%-")
+        except Exception as e:
+            print(f"Error adjusting volume: {e}")
         return "", "+              -"
 
     def shutdown(self, comm):
@@ -165,45 +201,50 @@ class function(object):
         return "", "+              -"
 
     def get_cpu(self, comm):
-        cpu = str(psutil.cpu_freq().current)
-        pert = str(psutil.cpu_percent())
-        return cpu + " MHz\n", "Util " + pert + " %"
+        cpu_freq = psutil.cpu_freq().current
+        cpu_pct = psutil.cpu_percent(interval=0)  # Non-blocking
+        return f"{cpu_freq:.0f} MHz\n", f"Util {cpu_pct:.1f} %"
 
     def get_ram(self, comm):
         mem = psutil.virtual_memory()
-        fram = str(round(float(mem.free) / (1024 * 1024), 1))
-        uram = str(round(float(mem.used) / (1024 * 1024), 1))
-        rem = str(round(float(mem.total) / (1024 * 1024), 1))
-        return " F " + fram + " MB\n U " + uram + " MB", "RAM: " + rem + " MB"
+        fram = round(mem.free / (1024 ** 2), 1)
+        uram = round(mem.used / (1024 ** 2), 1)
+        rem = round(mem.total / (1024 ** 2), 1)
+        return f" F {fram} MB\n U {uram} MB", f"RAM: {rem} MB"
 
     def get_cpu_temperature(self, comm):
         """get cpu temperature using vcgencmd"""
         cpu = CPUTemperature()
-        temp_c = float("{:.2f}".format(cpu.temperature))
-        temp_f = float("{:.2f}".format((temp_c * 9 / 5) + 32))
+        temp_c = round(cpu.temperature, 2)
+        temp_f = round((temp_c * 9 / 5) + 32, 2)
         if comm == "yes":
             self.last_comm = comm
-            return str(temp_f) + " F", "F              C"
+            return f"{temp_f} F", "F              C"
         elif comm == "no":
             self.last_comm = comm
-            return str(temp_c) + " C", "F              C"
+            return f"{temp_c} C", "F              C"
         else:
             if self.last_comm == "yes":
-                return str(temp_f) + " F", "F              C"
-            elif self.last_comm == "no":
-                return str(temp_c) + " C", "F              C"
+                return f"{temp_f} F", "F              C"
+            else:
+                return f"{temp_c} C", "F              C"
 
     def get_ip(self, comm):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            IPAddr = s.getsockname()[0]
-            con = "Local IP"
-            s.close()
-        except:
-            con = "Link Down"
-            IPAddr = "Not Available"
-        return con, IPAddr
+        # Cache IP address for 5 seconds to reduce network checks
+        current_time = time.time()
+        if current_time - self._last_ip_check > 5.0:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.settimeout(1.0)  # Add timeout to prevent hanging
+                s.connect(("8.8.8.8", 80))
+                self._cached_ip = s.getsockname()[0]
+                self._cached_ip_status = "Local IP"
+                s.close()
+            except:
+                self._cached_ip_status = "Link Down"
+                self._cached_ip = "Not Available"
+            self._last_ip_check = current_time
+        return self._cached_ip_status, self._cached_ip
 
     def no_button_pressed(self):
         if self.next_btn.value:

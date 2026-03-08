@@ -1,3 +1,9 @@
 /.vscode/*
 /.vscode
 .vscode
+
+# Debian package build artifacts
+debian/opt/
+*.deb
+*.deb.*
+debian-binary

@@ -1,0 +1,18 @@
+Package: pi-clock
+Version: 2.0.0
+Section: utils
+Priority: optional
+Architecture: armhf
+Depends: python3 (>= 3.9), python3-pil, python3-psutil, python3-gpiozero, python3-apt, python3-pip
+Maintainer: Aviral Verma <aviralverma@example.com>
+Homepage: https://github.com/aviralverma-8877/pi-clock
+Description: Nokia 5110 LCD-based system monitor and clock for Raspberry Pi
+ A Nokia 5110 LCD-based system monitor and clock for Raspberry Pi with
+ interactive button controls. Features include:
+  - Real-time clock display (24-hour or 12-hour format)
+  - System monitoring (CPU, RAM, disk, temperature)
+  - Network status display
+  - System management (updates, shutdown, restart)
+  - Display controls (backlight, contrast, volume)
+ .
+ Compatible with Raspberry Pi 3, 4, 5, and Zero models.

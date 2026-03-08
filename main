@@ -36,8 +36,11 @@ next_btn.switch_to_input()
 yes_btn.switch_to_input()
 no_btn.switch_to_input()
 
+# Initialize function instance
+functions = function(prev_btn, next_btn, yes_btn, no_btn, backlight, display, contr)
+
 menu = [
-    "       Time      ", 
+    "       Time      ",
     "       Date      ",
     "      Upgrade    ",
     "      Network    ",
@@ -48,11 +51,11 @@ menu = [
     "     Back LED    ",
     "     Contrast    ",
     "      Volume     ",
-    "     Shutdown    ", 
+    "     Shutdown    ",
     "      Restart    "]
 
-img = [
-    "time.bmp", 
+img_files = [
+    "time.bmp",
     "calendar.bmp",
     "upgrade.bmp",
     "network.bmp",
@@ -66,20 +69,35 @@ img = [
     "shutdown.bmp",
     "restart.bmp"]
 
-func_list = [
-    "functions.get_time",
-    "functions.get_date",
-    "functions.sys_upgrade",
-    "functions.get_ip",
-    "functions.get_cpu_temperature",
-    "functions.get_cpu",
-    "functions.get_ram",
-    "functions.get_disk",
-    "functions.toggleBkled",
-    "functions.set_contrast",
-    "functions.set_volume",
-    "functions.shutdown",
-    "functions.restart"]
+# Pre-load and cache all images for better performance
+print("Loading images...")
+cached_images = []
+for img_file in img_files:
+    img = Image.open('images/' + img_file).resize(
+        (display.width, display.height),
+        Image.Resampling.LANCZOS
+    ).convert('1')
+    cached_images.append(img)
+
+# Pre-load font
+font = ImageFont.truetype('fonts/EnterCommand.ttf', 15)
+
+# Direct function mapping (faster than eval)
+func_map = [
+    functions.get_time,
+    functions.get_date,
+    functions.sys_upgrade,
+    functions.get_ip,
+    functions.get_cpu_temperature,
+    functions.get_cpu,
+    functions.get_ram,
+    functions.get_disk,
+    functions.toggleBkled,
+    functions.set_contrast,
+    functions.set_volume,
+    functions.shutdown,
+    functions.restart
+]
 
 head = None
 body = None
@@ -87,42 +105,60 @@ msg = None
 option = 0
 btn_pressed = False
 command = "no"
-count = 0
-functions = function(prev_btn,next_btn,yes_btn,no_btn, backlight, display, contr)
+last_update_time = 0
+UPDATE_INTERVAL = 0.1  # Update display every 100ms
 
-while(True):
-    mem = psutil.virtual_memory()
+print("Starting main loop...")
+while True:
+    current_time = time.time()
+    needs_update = False
+
+    # Handle button input with debouncing
     if not btn_pressed:
-        btn_pressed = True
         if not next_btn.value:
+            btn_pressed = True
             command = ""
-            option = option + 1
-            if option == len(menu):
-                option = 0
+            option = (option + 1) % len(menu)
+            needs_update = True
         elif not prev_btn.value:
+            btn_pressed = True
             command = ""
-            option = option - 1
-            if option == -1:
-                option = int(len(menu)-1)
-        if not yes_btn.value:
+            option = (option - 1) % len(menu)
+            needs_update = True
+        elif not yes_btn.value:
+            btn_pressed = True
             command = "yes"
+            needs_update = True
         elif not no_btn.value:
+            btn_pressed = True
             command = "no"
-        else:
-            command = ""
-    if functions.no_button_pressed():
+            needs_update = True
+
+    # Reset button pressed state when all buttons are released
+    if btn_pressed and functions.no_button_pressed():
         btn_pressed = False
-    msg, body = eval(str(func_list[option])+"(\""+str(command)+"\")")
-    head = menu[option]
-    image = Image.open('images/'+img[option]).resize((display.width, display.height), Image.ANTIALIAS).convert('1')
-    draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype('fonts/EnterCommand.ttf', 15)
-    draw.text((0,1), head, font=font)
-    draw.text((0,36), body, font=font)
-    draw.text((25,13), msg, font=font)
-    if count == 5:
+
+    # Update display at regular intervals or when button pressed
+    if needs_update or (current_time - last_update_time >= UPDATE_INTERVAL):
+        # Call the function directly (much faster than eval)
+        msg, body = func_map[option](command)
+        head = menu[option]
+
+        # Copy cached image (faster than loading from disk)
+        image = cached_images[option].copy()
+        draw = ImageDraw.Draw(image)
+
+        # Draw text on image
+        draw.text((0, 1), head, font=font)
+        draw.text((0, 36), body, font=font)
+        draw.text((25, 13), msg, font=font)
+
+        # Update display
         display.image(image)
         display.show()
-        count = 0
-    count = count + 1
-    time.sleep(0.05)
+
+        last_update_time = current_time
+        needs_update = False
+
+    # Short sleep to prevent CPU spinning
+    time.sleep(0.02)  # 20ms - faster response time

@@ -1,0 +1,50 @@
+name: Build Debian Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y dpkg-dev build-essential
+
+    - name: Make build script executable
+      run: chmod +x build-deb.sh
+
+    - name: Build Debian package
+      run: ./build-deb.sh
+
+    - name: Get package info
+      id: package_info
+      run: |
+        PACKAGE_FILE=$(ls *.deb)
+        echo "package_file=$PACKAGE_FILE" >> $GITHUB_OUTPUT
+        dpkg-deb --info $PACKAGE_FILE
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: debian-package
+        path: '*.deb'
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: '*.deb'
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,24 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        echo "Stopping pi-clock service..."
+
+        # Stop the service
+        systemctl stop pi_clock.service >/dev/null 2>&1 || true
+
+        # Disable the service
+        systemctl disable pi_clock.service >/dev/null 2>&1 || true
+        ;;
+
+    failed-upgrade)
+        ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

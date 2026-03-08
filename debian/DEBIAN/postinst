@@ -1,0 +1,67 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    configure)
+        echo "Configuring pi-clock..."
+
+        # Install Python package that's not available in apt
+        echo "Installing adafruit-circuitpython-pcd8544..."
+        pip3 install --break-system-packages adafruit-circuitpython-pcd8544 >/dev/null 2>&1 || {
+            echo "Warning: Failed to install adafruit-circuitpython-pcd8544"
+            echo "You may need to install it manually: pip3 install --break-system-packages adafruit-circuitpython-pcd8544"
+        }
+
+        # Enable SPI interface if raspi-config is available
+        if command -v raspi-config >/dev/null 2>&1; then
+            echo "Enabling SPI interface..."
+            raspi-config nonint do_spi 0 || {
+                echo "Warning: Could not enable SPI automatically"
+                echo "Please enable SPI manually: sudo raspi-config"
+            }
+        else
+            echo "Note: raspi-config not found. Please ensure SPI is enabled manually."
+        fi
+
+        # Create symbolic link for systemd service
+        if [ ! -f /etc/systemd/system/pi_clock.service ]; then
+            ln -s /opt/pi-clock/pi_clock.service /etc/systemd/system/pi_clock.service
+        fi
+
+        # Reload systemd daemon
+        systemctl daemon-reload
+
+        # Enable and start the service
+        echo "Enabling pi-clock service..."
+        systemctl enable pi_clock.service >/dev/null 2>&1 || true
+
+        echo "Starting pi-clock service..."
+        systemctl start pi_clock.service >/dev/null 2>&1 || {
+            echo "Warning: Service failed to start. Check logs with: journalctl -u pi_clock.service -n 50"
+        }
+
+        # Check if service is running
+        if systemctl is-active --quiet pi_clock.service; then
+            echo "✓ pi-clock installed and running successfully!"
+            echo ""
+            echo "Service management commands:"
+            echo "  Status:  sudo systemctl status pi_clock.service"
+            echo "  Stop:    sudo systemctl stop pi_clock.service"
+            echo "  Start:   sudo systemctl start pi_clock.service"
+            echo "  Restart: sudo systemctl restart pi_clock.service"
+            echo "  Logs:    journalctl -u pi_clock.service -f"
+        else
+            echo "✗ Service not running. Check hardware connections and logs."
+        fi
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

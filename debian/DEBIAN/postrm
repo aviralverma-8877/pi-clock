@@ -1,0 +1,34 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    purge|remove)
+        echo "Cleaning up pi-clock..."
+
+        # Remove systemd service symlink
+        if [ -L /etc/systemd/system/pi_clock.service ]; then
+            rm -f /etc/systemd/system/pi_clock.service
+        fi
+
+        # Reload systemd daemon
+        systemctl daemon-reload >/dev/null 2>&1 || true
+
+        # On purge, remove everything including configuration
+        if [ "$1" = "purge" ]; then
+            echo "Purging pi-clock configuration..."
+            # Add any configuration cleanup here if needed
+        fi
+
+        echo "pi-clock has been removed."
+        ;;
+
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
