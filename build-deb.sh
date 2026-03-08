@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 # Package information
 PACKAGE_NAME="pi-clock"
 VERSION="2.0.0"
-ARCH="armhf"
+ARCH="all"
 BUILD_DIR="debian"
 PACKAGE_DIR="${BUILD_DIR}/opt/${PACKAGE_NAME}"
 
