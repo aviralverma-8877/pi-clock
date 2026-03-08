@@ -2,6 +2,8 @@
 
 This guide explains how to build and install pi-clock as a Debian package (.deb) for easy distribution and installation on Raspberry Pi.
 
+> **Note**: The package uses `Architecture: all` to ensure compatibility with both 32-bit (armhf) and 64-bit (arm64) Raspberry Pi OS. If you encounter dependency issues during installation, see [INSTALL-TROUBLESHOOTING.md](INSTALL-TROUBLESHOOTING.md).
+
 ## Benefits of Debian Package
 
 - **Easy Installation**: Single command to install with all dependencies
@@ -32,7 +34,7 @@ sudo apt-get install dpkg-dev build-essential
    ./build-deb.sh
    ```
 
-3. The script will create `pi-clock_2.0.0_armhf.deb` in the current directory.
+3. The script will create `pi-clock_2.0.0_all.deb` in the current directory.
 
 ### Build Output
 
@@ -49,12 +51,12 @@ The build script will:
 
 1. Transfer the .deb file to your Raspberry Pi (if built elsewhere):
    ```bash
-   scp pi-clock_2.0.0_armhf.deb pi@raspberrypi.local:~
+   scp pi-clock_2.0.0_all.deb pi@raspberrypi.local:~
    ```
 
 2. Install the package:
    ```bash
-   sudo dpkg -i pi-clock_2.0.0_armhf.deb
+   sudo dpkg -i pi-clock_2.0.0_all.deb
    ```
 
 3. If there are missing dependencies, install them:
@@ -131,7 +133,7 @@ sudo apt-get purge pi-clock
 ## Package Structure
 
 ```
-pi-clock_2.0.0_armhf.deb
+pi-clock_2.0.0_all.deb
 ├── DEBIAN/
 │   ├── control          # Package metadata and dependencies
 │   ├── postinst         # Post-installation script
@@ -224,13 +226,13 @@ For easier distribution, create an APT repository:
 
 1. Sign the package:
    ```bash
-   dpkg-sig --sign builder pi-clock_2.0.0_armhf.deb
+   dpkg-sig --sign builder pi-clock_2.0.0_all.deb
    ```
 
 2. Create repository structure:
    ```bash
    mkdir -p repo/binary
-   cp pi-clock_2.0.0_armhf.deb repo/binary/
+   cp pi-clock_2.0.0_all.deb repo/binary/
    cd repo
    dpkg-scanpackages binary /dev/null | gzip -9c > binary/Packages.gz
    ```
@@ -247,11 +249,11 @@ For easier distribution, create an APT repository:
 Upload the .deb file to GitHub Releases for easy distribution:
 
 1. Create a release on GitHub
-2. Upload `pi-clock_2.0.0_armhf.deb`
+2. Upload `pi-clock_2.0.0_all.deb`
 3. Users can download and install:
    ```bash
-   wget https://github.com/aviralverma-8877/pi-clock/releases/download/v2.0.0/pi-clock_2.0.0_armhf.deb
-   sudo dpkg -i pi-clock_2.0.0_armhf.deb
+   wget https://github.com/aviralverma-8877/pi-clock/releases/download/v2.0.0/pi-clock_2.0.0_all.deb
+   sudo dpkg -i pi-clock_2.0.0_all.deb
    ```
 
 ## Package Testing
@@ -261,7 +263,7 @@ Before distribution, test the package thoroughly:
 ### Clean Installation Test
 ```bash
 # On a fresh Raspberry Pi
-sudo dpkg -i pi-clock_2.0.0_armhf.deb
+sudo dpkg -i pi-clock_2.0.0_all.deb
 sudo apt-get install -f
 sudo systemctl status pi_clock.service
 ```
@@ -270,7 +272,7 @@ sudo systemctl status pi_clock.service
 ```bash
 # Install old version first, then new version
 sudo dpkg -i pi-clock_1.0.0_armhf.deb
-sudo dpkg -i pi-clock_2.0.0_armhf.deb
+sudo dpkg -i pi-clock_2.0.0_all.deb
 ```
 
 ### Removal Test
@@ -281,30 +283,49 @@ sudo dpkg -P pi-clock
 # Verify complete removal
 ```
 
-## Advanced: Multi-Architecture Support
+## Advanced: Architecture Notes
 
-To build for different Raspberry Pi architectures:
+### Current Configuration (Recommended)
 
-### For 64-bit Raspberry Pi OS (arm64)
+The package is configured with `Architecture: all`, which means:
+- **Works on all architectures**: Both 32-bit (armhf) and 64-bit (arm64)
+- **No compiled code**: Pure Python application
+- **Single package**: One .deb file works everywhere
+- **No architecture conflicts**: Avoids dependency resolution issues
 
-Edit `build-deb.sh`:
+This is the **recommended** configuration for pi-clock.
+
+### Alternative: Architecture-Specific Builds
+
+If you need architecture-specific packages (usually not necessary for pure Python):
+
+**For 32-bit only (armhf)**:
 ```bash
-ARCH="arm64"
+# Edit build-deb.sh
+ARCH="armhf"
+
+# Edit debian/DEBIAN/control
+Architecture: armhf
 ```
 
-Edit `debian/DEBIAN/control`:
-```
+**For 64-bit only (arm64)**:
+```bash
+# Edit build-deb.sh
+ARCH="arm64"
+
+# Edit debian/DEBIAN/control
 Architecture: arm64
 ```
 
-### For both architectures
-
-Edit `debian/DEBIAN/control`:
-```
+**For multiple architectures**:
+```bash
+# Edit debian/DEBIAN/control only
 Architecture: armhf arm64
 ```
 
-Build separate packages for each architecture.
+Then build separate packages for each architecture.
+
+**Note**: Using `Architecture: all` is preferred unless you have architecture-specific binaries.
 
 ## License
 

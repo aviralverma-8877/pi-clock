@@ -5,12 +5,29 @@ case "$1" in
     configure)
         echo "Configuring pi-clock..."
 
+        # Check if pip3 is available
+        if ! command -v pip3 >/dev/null 2>&1; then
+            echo "Warning: pip3 not found. Attempting to install python3-pip..."
+            apt-get install -y python3-pip 2>/dev/null || {
+                echo "Warning: Could not install python3-pip"
+                echo "Please install it manually: sudo apt-get install python3-pip"
+            }
+        fi
+
         # Install Python package that's not available in apt
-        echo "Installing adafruit-circuitpython-pcd8544..."
-        pip3 install --break-system-packages adafruit-circuitpython-pcd8544 >/dev/null 2>&1 || {
-            echo "Warning: Failed to install adafruit-circuitpython-pcd8544"
-            echo "You may need to install it manually: pip3 install --break-system-packages adafruit-circuitpython-pcd8544"
-        }
+        if command -v pip3 >/dev/null 2>&1; then
+            echo "Installing adafruit-circuitpython-pcd8544..."
+            pip3 install --break-system-packages adafruit-circuitpython-pcd8544 >/dev/null 2>&1 || \
+            pip3 install adafruit-circuitpython-pcd8544 >/dev/null 2>&1 || {
+                echo "Warning: Failed to install adafruit-circuitpython-pcd8544"
+                echo "You may need to install it manually:"
+                echo "  pip3 install --break-system-packages adafruit-circuitpython-pcd8544"
+            }
+        else
+            echo "Warning: pip3 not available. Please install adafruit-circuitpython-pcd8544 manually:"
+            echo "  sudo apt-get install python3-pip"
+            echo "  pip3 install --break-system-packages adafruit-circuitpython-pcd8544"
+        fi
 
         # Enable SPI interface if raspi-config is available
         if command -v raspi-config >/dev/null 2>&1; then

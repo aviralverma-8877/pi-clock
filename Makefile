@@ -2,7 +2,7 @@
 
 PACKAGE_NAME=pi-clock
 VERSION=2.0.0
-ARCH=armhf
+ARCH=all
 DEB_FILE=$(PACKAGE_NAME)_$(VERSION)_$(ARCH).deb
 
 help:

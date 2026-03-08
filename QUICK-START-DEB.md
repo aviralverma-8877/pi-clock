@@ -6,10 +6,10 @@
 
 ```bash
 # Download the package
-wget https://github.com/aviralverma-8877/pi-clock/releases/download/v2.0.0/pi-clock_2.0.0_armhf.deb
+wget https://github.com/aviralverma-8877/pi-clock/releases/download/v2.0.0/pi-clock_2.0.0_all.deb
 
 # Install
-sudo dpkg -i pi-clock_2.0.0_armhf.deb
+sudo dpkg -i pi-clock_2.0.0_all.deb
 sudo apt-get install -f
 ```
 
@@ -58,7 +58,7 @@ cd pi-clock
 
 ```bash
 # Install locally
-sudo dpkg -i pi-clock_2.0.0_armhf.deb
+sudo dpkg -i pi-clock_2.0.0_all.deb
 sudo apt-get install -f
 
 # Test functionality
@@ -71,7 +71,7 @@ sudo dpkg -r pi-clock
 
 ### Distribute
 
-Upload `pi-clock_2.0.0_armhf.deb` to GitHub Releases or your own server.
+Upload `pi-clock_2.0.0_all.deb` to GitHub Releases or your own server.
 
 ## Hardware Setup
 

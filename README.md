@@ -54,10 +54,10 @@ Download and install the .deb package:
 
 ```bash
 # Download the latest release
-wget https://github.com/aviralverma-8877/pi-clock/releases/download/v2.0.0/pi-clock_2.0.0_armhf.deb
+wget https://github.com/aviralverma-8877/pi-clock/releases/download/v2.0.0/pi-clock_2.0.0_all.deb
 
 # Install the package
-sudo dpkg -i pi-clock_2.0.0_armhf.deb
+sudo dpkg -i pi-clock_2.0.0_all.deb
 
 # Install any missing dependencies
 sudo apt-get install -f
@@ -68,6 +68,10 @@ The Debian package automatically handles:
 - Python dependencies
 - SPI interface configuration
 - Systemd service setup and start
+
+**Note**: The package uses `Architecture: all` to work on both 32-bit (armhf) and 64-bit (arm64) Raspberry Pi OS.
+
+**Troubleshooting**: If you encounter dependency issues, see [INSTALL-TROUBLESHOOTING.md](INSTALL-TROUBLESHOOTING.md).
 
 See [DEBIAN-PACKAGE.md](DEBIAN-PACKAGE.md) for building the package yourself.
 
