@@ -31,10 +31,12 @@ next_btn = digitalio.DigitalInOut(board.D18)
 yes_btn = digitalio.DigitalInOut(board.D17)
 no_btn = digitalio.DigitalInOut(board.D25)
 
-prev_btn.switch_to_input()
-next_btn.switch_to_input()
-yes_btn.switch_to_input()
-no_btn.switch_to_input()
+# Configure buttons with pull-up resistors
+# Buttons connect GPIO to Ground when pressed
+prev_btn.switch_to_input(pull=digitalio.Pull.UP)
+next_btn.switch_to_input(pull=digitalio.Pull.UP)
+yes_btn.switch_to_input(pull=digitalio.Pull.UP)
+no_btn.switch_to_input(pull=digitalio.Pull.UP)
 
 # Initialize function instance
 functions = function(prev_btn, next_btn, yes_btn, no_btn, backlight, display, contr)
