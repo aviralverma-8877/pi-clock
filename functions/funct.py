@@ -50,7 +50,9 @@ class function(object):
         self.bkled = bkled
         self.disp = disp
         self.contrast = contrast
-        self.last_comm = "yes"
+        self.last_comm = "no"
+        self._time_format = "no"
+        self._temp_format = "no"
         # Cache socket connection for IP check
         self._last_ip_check = 0
         self._cached_ip = "Checking..."
@@ -138,13 +140,11 @@ class function(object):
         return f"Free {free} GB", f"Total {total} GB"
 
     def get_time(self, comm):
-        if comm == "yes":
-            self.last_comm = comm
-        elif comm == "no":
-            self.last_comm = comm
+        if comm in ("yes", "no"):
+            self._time_format = comm
 
         now = datetime.now()
-        if self.last_comm == "yes":
+        if self._time_format == "yes":
             return now.strftime("%H:%M:%S"), "24hr      am/pm"
         else:
             return now.strftime("%I:%M:%S %p"), "24hr      am/pm"
@@ -166,26 +166,20 @@ class function(object):
         return "", "+              -"
 
     def shutdown(self, comm):
-        if comm == "yes":
+        if comm == "yes" and self.last_comm != "shutdown":
             self.last_comm = "shutdown"
             os.system("shutdown -h now")
+        if self.last_comm == "shutdown":
             return "", "yes         Wait.."
-        else:
-            if self.last_comm == "shutdown":
-                return "", "yes         Wait.."
-            else:
-                return "", "yes              "
+        return "", "yes              "
 
     def restart(self, comm):
-        if comm == "yes":
+        if comm == "yes" and self.last_comm != "rebooting":
             self.last_comm = "rebooting"
             os.system("reboot")
+        if self.last_comm == "rebooting":
             return "", "yes         Wait.."
-        else:
-            if self.last_comm == "rebooting":
-                return "", "yes         Wait.."
-            else:
-                return "", "yes              "
+        return "", "yes              "
 
     def set_contrast(self, comm):
         if comm == "yes":
@@ -217,17 +211,13 @@ class function(object):
         cpu = CPUTemperature()
         temp_c = round(cpu.temperature, 2)
         temp_f = round((temp_c * 9 / 5) + 32, 2)
-        if comm == "yes":
-            self.last_comm = comm
+        if comm in ("yes", "no"):
+            self._temp_format = comm
+
+        if self._temp_format == "yes":
             return f"{temp_f} F", "F              C"
-        elif comm == "no":
-            self.last_comm = comm
-            return f"{temp_c} C", "F              C"
         else:
-            if self.last_comm == "yes":
-                return f"{temp_f} F", "F              C"
-            else:
-                return f"{temp_c} C", "F              C"
+            return f"{temp_c} C", "F              C"
 
     def get_ip(self, comm):
         # Cache IP address for 5 seconds to reduce network checks

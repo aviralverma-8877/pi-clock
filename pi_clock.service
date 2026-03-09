@@ -1,11 +1,13 @@
 [Unit]
 Description=Nokia 5110 LCD based clock
+After=multi-user.target
 
 [Service]
 User=root
 WorkingDirectory=/root/pi-clock/
 ExecStart=/usr/bin/python3 /root/pi-clock/main
-Restart=always
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

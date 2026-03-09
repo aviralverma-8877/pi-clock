@@ -119,12 +119,14 @@ while True:
     if not btn_pressed:
         if not next_btn.value:
             btn_pressed = True
-            command = ""
+            command = "no"
+            functions.last_comm = "no"
             option = (option + 1) % len(menu)
             needs_update = True
         elif not prev_btn.value:
             btn_pressed = True
-            command = ""
+            command = "no"
+            functions.last_comm = "no"
             option = (option - 1) % len(menu)
             needs_update = True
         elif not yes_btn.value:
