@@ -168,18 +168,24 @@ class function(object):
     def shutdown(self, comm):
         if comm == "yes" and self.last_comm != "shutdown":
             self.last_comm = "shutdown"
-            os.system("shutdown -h now")
+            def do_shutdown():
+                time.sleep(0.5)
+                os.system("shutdown -h now")
+            threading.Thread(target=do_shutdown, daemon=True).start()
         if self.last_comm == "shutdown":
             return "", "yes         Wait.."
-        return "", "yes              "
+        return "", "yes           no"
 
     def restart(self, comm):
         if comm == "yes" and self.last_comm != "rebooting":
             self.last_comm = "rebooting"
-            os.system("reboot")
+            def do_reboot():
+                time.sleep(0.5)
+                os.system("reboot")
+            threading.Thread(target=do_reboot, daemon=True).start()
         if self.last_comm == "rebooting":
             return "", "yes         Wait.."
-        return "", "yes              "
+        return "", "yes           no"
 
     def set_contrast(self, comm):
         if comm == "yes":

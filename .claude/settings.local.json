@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(systemctl status pi_clock.service)",
+      "Bash(journalctl -u pi_clock.service -n 50 --no-pager)",
+      "Bash(systemctl list-units --type=service)",
+      "Bash(sudo cp /home/pi/pi-clock/functions/funct.py /home/pi/pi-clock/debian/opt/pi-clock/functions/funct.py)",
+      "Bash(python3 -m pytest --version)",
+      "Bash(python3 -c \"import unittest.mock\")",
+      "Bash(pip3 install pytest --break-system-packages)",
+      "Bash(pip install pytest --break-system-packages)",
+      "Bash(python3 -m pip install pytest --break-system-packages)",
+      "Bash(apt-get install -y python3-pytest)",
+      "Bash(sudo apt-get install -y python3-pytest)",
+      "Bash(python3 -m venv /tmp/test-env)",
+      "Bash(/tmp/test-env/bin/pip install pytest)",
+      "Bash(/tmp/test-env/bin/pytest tests/test_funct.py -v)",
+      "Bash(PYTHONPATH=/home/pi/pi-clock /tmp/test-env/bin/pytest tests/test_funct.py -v)",
+      "Bash(/tmp/test-env/bin/pip install psutil)"
+    ]
+  }
+}
