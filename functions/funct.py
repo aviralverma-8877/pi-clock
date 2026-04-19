@@ -14,12 +14,13 @@ UPGRADABLE_PKG = 0
 UPDATE_IN_PROGRESS = False
 UPDATE_PROGRESS = 0
 CACHE_INITIALIZED = False
+CACHE_INITIALIZING = False
 
 def initialize_cache():
-    """Initialize APT cache lazily to avoid blocking on startup"""
-    global CACHE, TOTAL_PKG, UPGRADABLE_PKG, CACHE_INITIALIZED
-    if CACHE_INITIALIZED:
-        return True
+    global CACHE, TOTAL_PKG, UPGRADABLE_PKG, CACHE_INITIALIZED, CACHE_INITIALIZING
+    if CACHE_INITIALIZED or CACHE_INITIALIZING:
+        return CACHE_INITIALIZED
+    CACHE_INITIALIZING = True
 
     try:
         CACHE = apt.Cache()
@@ -39,6 +40,8 @@ def initialize_cache():
     except Exception as e:
         print(f"Error initializing APT cache: {e}")
         return False
+    finally:
+        CACHE_INITIALIZING = False
 
 
 class function(object):
@@ -72,12 +75,12 @@ class function(object):
                 return "  OFF", "OFF           ON"
 
     def sys_upgrade(self, comm):
-        global UPDATE_IN_PROGRESS, CACHE_INITIALIZED
+        global UPDATE_IN_PROGRESS, CACHE_INITIALIZED, CACHE_INITIALIZING
 
-        # Initialize cache if not already done
         if not CACHE_INITIALIZED:
-            if not initialize_cache():
-                return "Cache Error", "Try again later"
+            if not CACHE_INITIALIZING:
+                threading.Thread(target=initialize_cache, daemon=True).start()
+            return "Loading...", "Please wait"
 
         if UPDATE_IN_PROGRESS:
             return f"T : {TOTAL_PKG}\nU : {UPGRADABLE_PKG}", "In Progress..."
