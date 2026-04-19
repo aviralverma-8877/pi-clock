@@ -106,7 +106,7 @@ body = None
 msg = None
 option = 0
 btn_pressed = False
-command = "no"
+command = "nav"
 last_update_time = 0
 UPDATE_INTERVAL = 0.1  # Update display every 100ms
 
@@ -119,13 +119,13 @@ while True:
     if not btn_pressed:
         if not next_btn.value:
             btn_pressed = True
-            command = "no"
+            command = "nav"
             functions.last_comm = "no"
             option = (option + 1) % len(menu)
             needs_update = True
         elif not prev_btn.value:
             btn_pressed = True
-            command = "no"
+            command = "nav"
             functions.last_comm = "no"
             option = (option - 1) % len(menu)
             needs_update = True
@@ -141,6 +141,7 @@ while True:
     # Reset button pressed state when all buttons are released
     if btn_pressed and functions.no_button_pressed():
         btn_pressed = False
+        command = "nav"
 
     # Update display at regular intervals or when button pressed
     if needs_update or (current_time - last_update_time >= UPDATE_INTERVAL):

@@ -18,4 +18,4 @@ Description: Nokia 5110 LCD-based system monitor and clock for Raspberry Pi
  .
  Compatible with Raspberry Pi 3, 4, 5, and Zero models running both
  32-bit (armhf) and 64-bit (arm64) Raspberry Pi OS.
-Installed-Size: 208
+Installed-Size: 232
