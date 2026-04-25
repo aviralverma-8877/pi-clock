@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import time
-import psutil
 import adafruit_pcd8544
 import board
 import busio
@@ -25,38 +24,35 @@ display.invert = True
 display.fill(1)
 display.show()
 
-# Button Def
 prev_btn = digitalio.DigitalInOut(board.D27)
 next_btn = digitalio.DigitalInOut(board.D18)
 yes_btn = digitalio.DigitalInOut(board.D17)
 no_btn = digitalio.DigitalInOut(board.D25)
 
-# Configure buttons with pull-up resistors
-# Buttons connect GPIO to Ground when pressed
 prev_btn.switch_to_input(pull=digitalio.Pull.UP)
 next_btn.switch_to_input(pull=digitalio.Pull.UP)
 yes_btn.switch_to_input(pull=digitalio.Pull.UP)
 no_btn.switch_to_input(pull=digitalio.Pull.UP)
 
-# Initialize function instance
 functions = function(prev_btn, next_btn, yes_btn, no_btn, backlight, display, contr)
 
-menu = [
-    "       Time      ",
-    "       Date      ",
-    "      Upgrade    ",
-    "      Network    ",
-    "    Temperature  ",
-    "        CPU      ",
-    "        RAM      ",
-    "       DISK      ",
-    "     Back LED    ",
-    "     Contrast    ",
-    "      Volume     ",
-    "     Shutdown    ",
-    "      Restart    "]
+MENU = [
+    "Time",
+    "Date",
+    "Upgrade",
+    "Network",
+    "Temperature",
+    "CPU",
+    "RAM",
+    "Disk",
+    "Backlight",
+    "Contrast",
+    "Volume",
+    "Shutdown",
+    "Restart",
+]
 
-img_files = [
+IMG_FILES = [
     "time.bmp",
     "calendar.bmp",
     "upgrade.bmp",
@@ -69,23 +65,45 @@ img_files = [
     "contrast.bmp",
     "volume.bmp",
     "shutdown.bmp",
-    "restart.bmp"]
+    "restart.bmp",
+]
 
-# Pre-load and cache all images for better performance
+# How often each screen refreshes (seconds)
+UPDATE_INTERVALS = [
+    1.0,   # Time
+    60.0,  # Date
+    5.0,   # Upgrade
+    5.0,   # Network
+    2.0,   # Temperature
+    2.0,   # CPU
+    2.0,   # RAM
+    10.0,  # Disk
+    30.0,  # Backlight
+    30.0,  # Contrast
+    30.0,  # Volume
+    30.0,  # Shutdown
+    30.0,  # Restart
+]
+
+# Screens where holding yes/no auto-repeats (contrast and volume)
+AUTO_REPEAT_SCREENS = {9, 10}
+
+DEBOUNCE    = 0.05   # minimum seconds between button events
+REPEAT_DELAY = 0.40  # seconds held before first auto-repeat
+REPEAT_RATE  = 0.12  # seconds between subsequent repeats
+
 print("Loading images...")
 cached_images = []
-for img_file in img_files:
-    img = Image.open('images/' + img_file).resize(
+for img_file in IMG_FILES:
+    img = Image.open("images/" + img_file).resize(
         (display.width, display.height),
         Image.Resampling.LANCZOS
-    ).convert('1')
+    ).convert("1")
     cached_images.append(img)
 
-# Pre-load font
-font = ImageFont.truetype('fonts/EnterCommand.ttf', 15)
+font = ImageFont.truetype("fonts/EnterCommand.ttf", 15)
 
-# Direct function mapping (faster than eval)
-func_map = [
+FUNC_MAP = [
     functions.get_time,
     functions.get_date,
     functions.sys_upgrade,
@@ -98,72 +116,112 @@ func_map = [
     functions.set_contrast,
     functions.set_volume,
     functions.shutdown,
-    functions.restart
+    functions.restart,
 ]
 
-head = None
-body = None
-msg = None
+
+def _centered_x(draw, text, font, width):
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return max(0, (width - (bbox[2] - bbox[0])) // 2)
+
+
+def render(option, msg, body):
+    image = cached_images[option].copy()
+    draw = ImageDraw.Draw(image)
+
+    # Right column starts at x=25 (left side reserved for background icon)
+    RIGHT_X = 25
+    right_w = display.width - RIGHT_X  # 59 px
+
+    # Title — centered in right column
+    tbbox = draw.textbbox((0, 0), MENU[option], font=font)
+    tx = RIGHT_X + max(0, (right_w - (tbbox[2] - tbbox[0])) // 2)
+    draw.text((tx, 1), MENU[option], font=font)
+    title_bottom = 1 + (tbbox[3] - tbbox[1])  # actual rendered height
+
+    # Main data — centred in right column, 3 px below title
+    if msg:
+        mbbox = draw.textbbox((0, 0), msg, font=font)
+        mx = RIGHT_X + max(0, (right_w - (mbbox[2] - mbbox[0])) // 2)
+        draw.text((mx, title_bottom + 3), msg, font=font)
+
+    # Action bar — left-aligned at the bottom
+    draw.text((0, 34), body, font=font)
+
+    display.image(image)
+    display.show()
+
+
 option = 0
-btn_pressed = False
 command = "nav"
-last_update_time = 0
-UPDATE_INTERVAL = 0.1  # Update display every 100ms
+last_update_time = 0.0
+last_content = (None, None)
+
+btn_active   = {k: False for k in ("prev", "next", "yes", "no")}
+btn_down_at  = {k: 0.0   for k in ("prev", "next", "yes", "no")}
+last_evt_at  = {k: 0.0   for k in ("prev", "next", "yes", "no")}
+last_rep_at  = {k: 0.0   for k in ("yes",  "no")}
+
+BTN_PINS = {
+    "prev": prev_btn,
+    "next": next_btn,
+    "yes":  yes_btn,
+    "no":   no_btn,
+}
 
 print("Starting main loop...")
 while True:
-    current_time = time.time()
+    now = time.time()
     needs_update = False
+    nav_changed  = False
 
-    # Handle button input with debouncing
-    if not btn_pressed:
-        if not next_btn.value:
-            btn_pressed = True
-            command = "nav"
-            functions.last_comm = "no"
-            option = (option + 1) % len(menu)
-            needs_update = True
-        elif not prev_btn.value:
-            btn_pressed = True
-            command = "nav"
-            functions.last_comm = "no"
-            option = (option - 1) % len(menu)
-            needs_update = True
-        elif not yes_btn.value:
-            btn_pressed = True
-            command = "yes"
-            needs_update = True
-        elif not no_btn.value:
-            btn_pressed = True
-            command = "no"
-            needs_update = True
+    # --- Button handling ---
+    for name, pin in BTN_PINS.items():
+        pressed = not pin.value
+        was     = btn_active[name]
 
-    # Reset button pressed state when all buttons are released
-    if btn_pressed and functions.no_button_pressed():
-        btn_pressed = False
-        command = "nav"
+        if pressed and not was:
+            btn_active[name]  = True
+            btn_down_at[name] = now
+            if now - last_evt_at[name] >= DEBOUNCE:
+                last_evt_at[name] = now
+                if name == "next":
+                    option = (option + 1) % len(MENU)
+                    command = "nav"
+                    functions.last_comm = "no"
+                    nav_changed = True
+                elif name == "prev":
+                    option = (option - 1) % len(MENU)
+                    command = "nav"
+                    functions.last_comm = "no"
+                    nav_changed = True
+                elif name in ("yes", "no"):
+                    command = name
+                needs_update = True
+        elif not pressed and was:
+            btn_active[name] = False
 
-    # Update display at regular intervals or when button pressed
-    if needs_update or (current_time - last_update_time >= UPDATE_INTERVAL):
-        # Call the function directly (much faster than eval)
-        msg, body = func_map[option](command)
-        head = menu[option]
+    # Auto-repeat while holding yes/no on adjustable screens
+    if option in AUTO_REPEAT_SCREENS:
+        for name in ("yes", "no"):
+            if btn_active[name]:
+                held = now - btn_down_at[name]
+                if held >= REPEAT_DELAY and now - last_rep_at[name] >= REPEAT_RATE:
+                    command = name
+                    needs_update = True
+                    last_rep_at[name] = now
 
-        # Copy cached image (faster than loading from disk)
-        image = cached_images[option].copy()
-        draw = ImageDraw.Draw(image)
+    # Periodic refresh
+    if now - last_update_time >= UPDATE_INTERVALS[option]:
+        needs_update = True
 
-        # Draw text on image
-        draw.text((0, 1), head, font=font)
-        draw.text((0, 36), body, font=font)
-        draw.text((25, 13), msg, font=font)
+    # --- Render ---
+    if needs_update:
+        msg, body = FUNC_MAP[option](command)
+        if (msg, body) != last_content or nav_changed:
+            render(option, msg, body)
+            last_content = (msg, body)
+        last_update_time = now
+        command = "nav"  # consumed; auto-repeat will re-set if still held
 
-        # Update display
-        display.image(image)
-        display.show()
-
-        last_update_time = current_time
-        needs_update = False
-
-    # Short sleep to prevent CPU spinning
-    time.sleep(0.02)  # 20ms - faster response time
+    time.sleep(0.01)  # 10 ms — snappy button response, low CPU idle

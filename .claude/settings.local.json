@@ -31,7 +31,15 @@
       "Read(//dev/**)",
       "Bash(gpioinfo)",
       "Bash(xxd)",
-      "Bash(sudo sed *)"
+      "Bash(sudo sed *)",
+      "Bash(git remote *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(python3 *)",
+      "Bash(bash *)",
+      "Bash(sudo -S rm -rf debian/opt)",
+      "Bash(sudo -S dpkg -i pi-clock_2.0.1_all.deb)",
+      "Bash(sudo -S systemctl status pi_clock.service)"
     ]
   }
 }
