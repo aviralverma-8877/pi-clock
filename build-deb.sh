@@ -28,6 +28,7 @@ fi
 # Clean previous build
 echo -e "${YELLOW}Cleaning previous build...${NC}"
 if [ -d "${BUILD_DIR}/opt" ]; then
+    chmod -R u+w "${BUILD_DIR}/opt" 2>/dev/null || true
     rm -rf "${BUILD_DIR}/opt"
 fi
 if [ -f "${PACKAGE_NAME}_${VERSION}_${ARCH}.deb" ]; then
@@ -88,6 +89,7 @@ echo "*" > "${PACKAGE_DIR}/.gitignore"
 
 # Calculate installed size (in KB)
 INSTALLED_SIZE=$(du -sk "${BUILD_DIR}/opt" | cut -f1)
+sed -i '/^Installed-Size:/d' "${BUILD_DIR}/DEBIAN/control"
 echo "Installed-Size: ${INSTALLED_SIZE}" >> "${BUILD_DIR}/DEBIAN/control"
 
 # Build the package
