@@ -16,7 +16,22 @@
       "Bash(/tmp/test-env/bin/pip install pytest)",
       "Bash(/tmp/test-env/bin/pytest tests/test_funct.py -v)",
       "Bash(PYTHONPATH=/home/pi/pi-clock /tmp/test-env/bin/pytest tests/test_funct.py -v)",
-      "Bash(/tmp/test-env/bin/pip install psutil)"
+      "Bash(/tmp/test-env/bin/pip install psutil)",
+      "Bash(systemctl status *)",
+      "Bash(dpkg -l pi-clock)",
+      "Bash(dpkg -L pi-clock)",
+      "Bash(journalctl -u pi_clock.service -n 30)",
+      "Bash(xargs ls *)",
+      "Bash(lsof /dev/gpiochip*)",
+      "Bash(lsof /dev/spidev*)",
+      "Bash(fuser /dev/gpiochip0)",
+      "Bash(fuser /dev/spidev0.0)",
+      "Read(//boot/firmware/**)",
+      "Read(//boot/**)",
+      "Read(//dev/**)",
+      "Bash(gpioinfo)",
+      "Bash(xxd)",
+      "Bash(sudo sed *)"
     ]
   }
 }

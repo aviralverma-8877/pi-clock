@@ -27,9 +27,25 @@ pip3 install --break-system-packages adafruit-circuitpython-pcd8544 || {
 # Install python-apt from system packages instead of pip
 apt install -y python3-apt
 
-# Enable SPI interface
-echo "Enabling SPI interface..."
-raspi-config nonint do_spi 0
+# Configure SPI with spi0-0cs overlay so GPIO 8 (CE0) is free for software CS
+echo "Configuring SPI interface..."
+CONFIG_FILE=""
+if [ -f /boot/firmware/config.txt ]; then
+    CONFIG_FILE="/boot/firmware/config.txt"
+elif [ -f /boot/config.txt ]; then
+    CONFIG_FILE="/boot/config.txt"
+fi
+
+if [ -n "$CONFIG_FILE" ]; then
+    if grep -q "dtparam=spi=on" "$CONFIG_FILE"; then
+        sed -i 's/dtparam=spi=on/dtoverlay=spi0-0cs/' "$CONFIG_FILE"
+    elif ! grep -q "dtoverlay=spi0-0cs" "$CONFIG_FILE"; then
+        echo "dtoverlay=spi0-0cs" >> "$CONFIG_FILE"
+    fi
+    echo "Note: A reboot is required for SPI changes to take effect."
+else
+    echo "Warning: Could not find config.txt. Please add 'dtoverlay=spi0-0cs' manually."
+fi
 DIR="pi-clock"
 if [ -d "$DIR" ]; then
    echo "Removing existing pi-clock directory..."
