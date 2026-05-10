@@ -14,19 +14,22 @@ case "$1" in
             }
         fi
 
-        # Install Python package that's not available in apt
+        # Install Python packages not available in apt
         if command -v pip3 >/dev/null 2>&1; then
-            echo "Installing adafruit-circuitpython-pcd8544..."
-            pip3 install --break-system-packages adafruit-circuitpython-pcd8544 >/dev/null 2>&1 || \
-            pip3 install adafruit-circuitpython-pcd8544 >/dev/null 2>&1 || {
-                echo "Warning: Failed to install adafruit-circuitpython-pcd8544"
-                echo "You may need to install it manually:"
-                echo "  pip3 install --break-system-packages adafruit-circuitpython-pcd8544"
+            PIP_PKGS="adafruit-circuitpython-pcd8544 vosk sounddevice yfinance requests"
+            echo "Installing Python packages: $PIP_PKGS"
+            # Install PortAudio system library required by sounddevice
+            apt-get install -y libportaudio2 >/dev/null 2>&1 || true
+            pip3 install --break-system-packages --ignore-installed $PIP_PKGS >/dev/null 2>&1 || \
+            pip3 install --ignore-installed $PIP_PKGS >/dev/null 2>&1 || {
+                echo "Warning: Failed to install some Python packages"
+                echo "You may need to install them manually:"
+                echo "  pip3 install --break-system-packages $PIP_PKGS"
             }
         else
-            echo "Warning: pip3 not available. Please install adafruit-circuitpython-pcd8544 manually:"
+            echo "Warning: pip3 not available. Please install packages manually:"
             echo "  sudo apt-get install python3-pip"
-            echo "  pip3 install --break-system-packages adafruit-circuitpython-pcd8544"
+            echo "  pip3 install --break-system-packages adafruit-circuitpython-pcd8544 vosk sounddevice yfinance requests"
         fi
 
         # Configure SPI with spi0-0cs overlay so GPIO 8 (CE0) is free for software CS
@@ -48,6 +51,71 @@ case "$1" in
         else
             echo "Warning: Could not find config.txt. Please add 'dtoverlay=spi0-0cs' manually."
         fi
+
+        # --- Ollama configuration ---
+        echo ""
+        echo "=== Ollama Server Configuration ==="
+        printf "Enter Ollama server IP or host:port (e.g. 192.168.1.30 or 192.168.1.30:11434)\n"
+        printf "Ollama server [192.168.1.30]: "
+        read OLLAMA_HOST_INPUT </dev/tty
+        OLLAMA_HOST_INPUT=${OLLAMA_HOST_INPUT:-192.168.1.30}
+
+        if echo "$OLLAMA_HOST_INPUT" | grep -q ":"; then
+            OLLAMA_URL="http://${OLLAMA_HOST_INPUT}"
+        else
+            OLLAMA_URL="http://${OLLAMA_HOST_INPUT}:11434"
+        fi
+
+        echo "Fetching available models from ${OLLAMA_URL}..."
+        MODELS_JSON=$(curl -sf --connect-timeout 5 "${OLLAMA_URL}/api/tags" 2>/dev/null || echo "")
+
+        if [ -z "$MODELS_JSON" ]; then
+            echo "Warning: Could not reach Ollama server at ${OLLAMA_URL}."
+            printf "Enter model name manually [deepseek-coder-v2:latest]: "
+            read OLLAMA_MODEL_FINAL </dev/tty
+            OLLAMA_MODEL_FINAL=${OLLAMA_MODEL_FINAL:-deepseek-coder-v2:latest}
+        else
+            MODEL_LIST=$(echo "$MODELS_JSON" | python3 -c "
+import sys, json
+models = [m['name'] for m in json.load(sys.stdin).get('models', [])]
+for i, m in enumerate(models, 1):
+    print(f'  {i}. {m}')
+" 2>/dev/null)
+            MODEL_COUNT=$(echo "$MODELS_JSON" | python3 -c "
+import sys, json
+print(len(json.load(sys.stdin).get('models', [])))
+" 2>/dev/null)
+
+            if [ -z "$MODEL_LIST" ] || [ "$MODEL_COUNT" = "0" ]; then
+                echo "No models found on server."
+                printf "Enter model name manually [deepseek-coder-v2:latest]: "
+                read OLLAMA_MODEL_FINAL </dev/tty
+                OLLAMA_MODEL_FINAL=${OLLAMA_MODEL_FINAL:-deepseek-coder-v2:latest}
+            else
+                echo ""
+                echo "Available models:"
+                echo "$MODEL_LIST"
+                echo ""
+                printf "Select model number [1]: "
+                read MODEL_SEL </dev/tty
+                MODEL_SEL=${MODEL_SEL:-1}
+                OLLAMA_MODEL_FINAL=$(echo "$MODELS_JSON" | python3 -c "
+import sys, json
+models = [m['name'] for m in json.load(sys.stdin).get('models', [])]
+try:
+    print(models[int('${MODEL_SEL}') - 1])
+except:
+    print(models[0])
+" 2>/dev/null)
+            fi
+        fi
+
+        echo "✓ Ollama server : ${OLLAMA_HOST_INPUT}"
+        echo "✓ Model         : ${OLLAMA_MODEL_FINAL}"
+
+        SERVICE_FILE="/opt/pi-clock/pi_clock.service"
+        sed -i "s|^Environment=OLLAMA_HOST=.*|Environment=OLLAMA_HOST=${OLLAMA_HOST_INPUT}|" "$SERVICE_FILE"
+        sed -i "s|^Environment=OLLAMA_MODEL=.*|Environment=OLLAMA_MODEL=${OLLAMA_MODEL_FINAL}|" "$SERVICE_FILE"
 
         # Create symbolic link for systemd service
         if [ ! -f /etc/systemd/system/pi_clock.service ]; then

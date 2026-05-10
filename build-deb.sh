@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 
 # Package information
 PACKAGE_NAME="pi-clock"
-VERSION="2.0.1"
+VERSION="2.0.2"
 ARCH="all"
 BUILD_DIR="debian"
 PACKAGE_DIR="${BUILD_DIR}/opt/${PACKAGE_NAME}"
@@ -48,6 +48,7 @@ cp -r fonts "${PACKAGE_DIR}/"
 cp main "${PACKAGE_DIR}/"
 cp pi_clock.service "${PACKAGE_DIR}/"
 cp README.md "${PACKAGE_DIR}/"
+cp -r models "${PACKAGE_DIR}/"
 
 # Copy DEBIAN control files if they don't exist
 if [ ! -f "${BUILD_DIR}/DEBIAN/control" ]; then
@@ -76,6 +77,8 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/pi-clock/
+Environment=OLLAMA_HOST=192.168.1.30
+Environment=OLLAMA_MODEL=deepseek-coder-v2:latest
 ExecStart=/usr/bin/python3 /opt/pi-clock/main
 Restart=always
 RestartSec=10

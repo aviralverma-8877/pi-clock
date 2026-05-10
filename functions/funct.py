@@ -6,6 +6,8 @@ import socket
 import os
 import subprocess
 import threading
+import json
+import re
 import apt
 import apt.progress
 
@@ -65,6 +67,15 @@ class function(object):
         self._last_disk_time = 0.0
         self._temp_c = 0.0
         self._last_temp_time = 0.0
+        # Voice assistant state
+        self._asst_state = 'init'   # init|idle|listening|processing|showing
+        self._asst_loading = False
+        self._asst_vosk_model = None
+        self._asst_mic_idx = None
+        self._asst_transcript = ''
+        self._asst_lines = []
+        self._asst_scroll = 0
+        self._asst_start_time = 0.0
 
     def _refresh_cpu(self):
         now = time.time()
@@ -277,6 +288,259 @@ class function(object):
                 self._cached_ip = "Not Available"
             self._last_ip_check = now
         return self._cached_ip_status, self._cached_ip
+
+    # ── Voice assistant ────────────────────────────────────────────────────────
+
+    def _asst_load_vosk(self):
+        try:
+            from vosk import Model
+            model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     '..', 'models', 'vosk-model-small-en-us-0.15')
+            self._asst_vosk_model = Model(model_dir)
+            self._asst_state = 'idle'
+        except Exception as e:
+            print(f"Vosk load error: {e}")
+            self._asst_lines = self._asst_wrap(f"Vosk error: {e}")
+            self._asst_state = 'showing'
+
+    def _asst_find_mic(self):
+        try:
+            import sounddevice as sd
+            for i, d in enumerate(sd.query_devices()):
+                if d['max_input_channels'] > 0 and 'USB' in str(d.get('name', '')):
+                    return i
+            for i, d in enumerate(sd.query_devices()):
+                if d['max_input_channels'] > 0:
+                    return i
+        except Exception as e:
+            print(f"Mic find error: {e}")
+        return None
+
+    def _asst_record_and_process(self):
+        import sounddevice as sd
+        import numpy as np
+        from vosk import KaldiRecognizer
+
+        VOSK_RATE = 16000
+        DURATION  = 6
+
+        try:
+            if self._asst_mic_idx is None:
+                self._asst_mic_idx = self._asst_find_mic()
+            if self._asst_mic_idx is None:
+                self._asst_lines = ["No mic found"]
+                self._asst_state = 'showing'
+                return
+
+            # Record at the device's native rate, then resample to 16 kHz for vosk
+            dev_info   = sd.query_devices(self._asst_mic_idx)
+            native_rate = int(dev_info['default_samplerate'])
+            audio = sd.rec(int(DURATION * native_rate), samplerate=native_rate,
+                           channels=1, dtype='int16', device=self._asst_mic_idx)
+            sd.wait()
+
+            # Linear-interpolation resample to VOSK_RATE
+            samples_in  = audio.flatten().astype(np.float32)
+            samples_out = int(len(samples_in) * VOSK_RATE / native_rate)
+            resampled   = np.interp(
+                np.linspace(0, len(samples_in) - 1, samples_out),
+                np.arange(len(samples_in)),
+                samples_in,
+            ).astype(np.int16)
+            audio = resampled
+
+            self._asst_state = 'processing'
+
+            rec = KaldiRecognizer(self._asst_vosk_model, VOSK_RATE)
+            rec.AcceptWaveform(audio.tobytes())
+            result = json.loads(rec.FinalResult())
+            self._asst_transcript = result.get('text', '').strip()
+            print(f"Heard: {self._asst_transcript!r}")
+
+            if not self._asst_transcript:
+                self._asst_lines = ["Could not hear.", "Press YES to retry", "NO=back"]
+                self._asst_state = 'showing'
+                return
+
+            self._asst_answer(self._asst_transcript)
+
+        except Exception as e:
+            print(f"Record error: {e}")
+            self._asst_lines = self._asst_wrap(f"Error: {e}")
+            self._asst_state = 'showing'
+
+    def _asst_answer(self, text):
+        q = text.lower()
+
+        m = re.search(r'weather (?:in |at |for )?(.+?)(?:\?|$)', q)
+        if m:
+            city = m.group(1).strip()
+            ans = self._asst_sanitise(self._asst_weather(city))
+            self._asst_lines = self._asst_wrap(f"Weather {city}: {ans}")
+            self._asst_state = 'showing'
+            return
+
+        m = re.search(r'(?:price of |stock (?:price )?(?:of |for )?|how much (?:is |does )?)([a-z][a-z\s]+?)(?:\?|$)', q)
+        if m:
+            raw = m.group(1).strip()
+            ans = self._asst_sanitise(self._asst_stock(raw))
+            self._asst_lines = self._asst_wrap(f"{raw.upper()}: {ans}")
+            self._asst_state = 'showing'
+            return
+
+        m = re.search(r'air quality (?:in |at |for )?(.+?)(?:\?|$)', q)
+        if m:
+            city = m.group(1).strip()
+            ans = self._asst_sanitise(self._asst_air_quality(city))
+            self._asst_lines = self._asst_wrap(f"AQI {city}: {ans}")
+            self._asst_state = 'showing'
+            return
+
+        ans = self._asst_sanitise(self._asst_ollama(text))
+        self._asst_lines = self._asst_wrap(ans)
+        self._asst_state = 'showing'
+
+    def _asst_weather(self, city):
+        import requests
+        try:
+            r = requests.get(f'https://wttr.in/{city}?format=j1', timeout=5)
+            data = r.json()
+            cc   = data['current_condition'][0]
+            desc = cc['weatherDesc'][0]['value']
+            tc   = cc['temp_C']
+            tf   = cc['temp_F']
+            feels_c = cc['FeelsLikeC']
+            return f"{desc}, {tc}C/{tf}F, feels {feels_c}C"
+        except Exception:
+            return "Unavailable"
+
+    def _asst_stock(self, ticker_or_name):
+        import yfinance as yf
+        NAME_MAP = {
+            'apple': 'AAPL', 'google': 'GOOGL', 'alphabet': 'GOOGL',
+            'microsoft': 'MSFT', 'amazon': 'AMZN', 'tesla': 'TSLA',
+            'meta': 'META', 'facebook': 'META', 'netflix': 'NFLX',
+            'nvidia': 'NVDA', 'reliance': 'RELIANCE.NS', 'infosys': 'INFY.NS',
+            'tata': 'TCS.NS', 'wipro': 'WIPRO.NS',
+        }
+        ticker = NAME_MAP.get(ticker_or_name.lower(),
+                              ticker_or_name.upper().replace(' ', '-'))
+        try:
+            info = yf.Ticker(ticker).fast_info
+            price = info.last_price
+            currency = getattr(info, 'currency', 'USD')
+            return f"{currency} {price:.2f}" if price else "Not found"
+        except Exception:
+            return "Unavailable"
+
+    def _asst_air_quality(self, city):
+        import requests
+        try:
+            r = requests.get(
+                f'https://api.openaq.org/v2/locations?city={city}&limit=1',
+                timeout=5, headers={'Accept': 'application/json'})
+            results = r.json().get('results', [])
+            if not results:
+                return "No data"
+            loc_id = results[0]['id']
+            r2 = requests.get(f'https://api.openaq.org/v2/latest/{loc_id}',
+                              timeout=5, headers={'Accept': 'application/json'})
+            measures = r2.json().get('results', [{}])[0].get('measurements', [])
+            for m in measures:
+                if m['parameter'] in ('pm25', 'pm2.5'):
+                    val = m['value']
+                    if val < 12:      cat = "Good"
+                    elif val < 35.5:  cat = "Moderate"
+                    elif val < 55.5:  cat = "Unhealthy*"
+                    else:             cat = "Unhealthy"
+                    return f"PM2.5={val:.0f} {cat}"
+            return "No PM2.5 data"
+        except Exception:
+            return "Unavailable"
+
+    def _asst_ollama(self, question):
+        import requests
+        host = os.environ.get('OLLAMA_HOST', '')
+        if not host:
+            return "Set OLLAMA_HOST env var (e.g. 192.168.1.10) for questions."
+        model = os.environ.get('OLLAMA_MODEL', 'llama3.2')
+        if ':' not in host:
+            host = f"{host}:11434"
+        url = f"http://{host}/api/chat"
+        payload = {
+            "model": model,
+            "stream": False,
+            "messages": [{"role": "user", "content":
+                          f"Answer briefly in 1-2 sentences, no markdown: {question}"}],
+        }
+        try:
+            r = requests.post(url, json=payload, timeout=15)
+            r.raise_for_status()
+            return r.json()["message"]["content"].strip()
+        except Exception as e:
+            return f"Ollama error: {str(e)[:55]}"
+
+    def _asst_sanitise(self, text):
+        """Strip characters the font can't render (emoji, degree symbol, etc.)."""
+        return ''.join(c if 32 <= ord(c) < 127 else ' ' for c in text).strip()
+
+    def _asst_wrap(self, text, width=14):
+        words = text.split()
+        lines, current = [], ''
+        for word in words:
+            if not current:
+                current = word[:width]
+            elif len(current) + 1 + len(word) <= width:
+                current += ' ' + word
+            else:
+                lines.append(current)
+                current = word[:width]
+        if current:
+            lines.append(current)
+        return lines or ['(empty)']
+
+    def ask_assistant(self, command):
+        if self._asst_state == 'init':
+            if not self._asst_loading:
+                self._asst_loading = True
+                threading.Thread(target=self._asst_load_vosk, daemon=True).start()
+            return "Loading...", "Please wait"
+
+        elif self._asst_state == 'idle':
+            if command == 'yes':
+                self._asst_scroll = 0
+                self._asst_transcript = ''
+                self._asst_lines = []
+                self._asst_start_time = time.time()
+                self._asst_state = 'listening'
+                threading.Thread(target=self._asst_record_and_process,
+                                 daemon=True).start()
+            return "Press YES", "YES=ask"
+
+        elif self._asst_state == 'listening':
+            remaining = max(0, int(6 - (time.time() - self._asst_start_time)))
+            return "Listening...", f"Rec {remaining}s left"
+
+        elif self._asst_state == 'processing':
+            q = self._asst_transcript
+            short = (q[:11] + '..') if len(q) > 13 else q
+            return short or '...', "Thinking..."
+
+        elif self._asst_state == 'showing':
+            if command == 'no':
+                max_s = max(0, len(self._asst_lines) - 4)
+                if self._asst_scroll >= max_s:
+                    self._asst_scroll = 0
+                else:
+                    self._asst_scroll += 1
+            elif command == 'yes':
+                self._asst_state = 'idle'
+                return "Press YES", "YES=ask"
+            return '__showing__', ''
+
+        return '...', ''
+
+    # ── End voice assistant ────────────────────────────────────────────────────
 
     def no_button_pressed(self):
         return (self.next_btn.value and self.prev_btn.value and

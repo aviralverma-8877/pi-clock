@@ -1,5 +1,5 @@
 Package: pi-clock
-Version: 2.0.1
+Version: 2.0.2
 Section: utils
 Priority: optional
 Architecture: all
@@ -15,7 +15,8 @@ Description: Nokia 5110 LCD-based system monitor and clock for Raspberry Pi
   - Network status display
   - System management (updates, shutdown, restart)
   - Display controls (backlight, contrast, volume)
+  - Voice assistant (weather, stock prices, air quality, general Q&A)
  .
  Compatible with Raspberry Pi 3, 4, 5, and Zero models running both
  32-bit (armhf) and 64-bit (arm64) Raspberry Pi OS.
-Installed-Size: 232
+Installed-Size: 109796

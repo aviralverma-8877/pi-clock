@@ -6,6 +6,8 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/root/pi-clock/
+Environment=OLLAMA_HOST=192.168.1.30
+Environment=OLLAMA_MODEL=deepseek-coder-v2:latest
 ExecStart=/usr/bin/python3 /root/pi-clock/main
 Restart=always
 RestartSec=10

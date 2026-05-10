@@ -50,6 +50,7 @@ MENU = [
     "Volume",
     "Shutdown",
     "Restart",
+    "Assistant",
 ]
 
 IMG_FILES = [
@@ -66,6 +67,7 @@ IMG_FILES = [
     "volume.bmp",
     "shutdown.bmp",
     "restart.bmp",
+    "assistant.bmp",
 ]
 
 # How often each screen refreshes (seconds)
@@ -83,7 +85,10 @@ UPDATE_INTERVALS = [
     30.0,  # Volume
     30.0,  # Shutdown
     30.0,  # Restart
+    0.5,   # Assistant (frequent refresh for countdown/state changes)
 ]
+
+ASST_IDX = MENU.index("Assistant")
 
 # Screens where holding yes/no auto-repeats (contrast and volume)
 AUTO_REPEAT_SCREENS = {9, 10}
@@ -102,6 +107,7 @@ for img_file in IMG_FILES:
     cached_images.append(img)
 
 font = ImageFont.truetype("fonts/EnterCommand.ttf", 15)
+font_small = font  # same 15pt font — at this size chars are 7px tall, very readable
 
 FUNC_MAP = [
     functions.get_time,
@@ -117,7 +123,38 @@ FUNC_MAP = [
     functions.set_volume,
     functions.shutdown,
     functions.restart,
+    functions.ask_assistant,
 ]
+
+
+def render_assistant_answer(transcript, lines, scroll):
+    """Full-screen answer render — uses the same 15pt font as the rest of the UI.
+    At 15pt, EnterCommand glyphs are 7px tall, so 5 answer lines fit on the 48px display."""
+    LINE_H  = 9      # 7px glyph + 2px gap
+    VISIBLE = 4      # answer lines shown at once
+    HDR_Y   = 0      # transcript line y
+    ANS_Y   = 9      # first answer line
+
+    image = Image.new("1", (display.width, display.height), 1)
+    draw = ImageDraw.Draw(image)
+
+    # Transcript header
+    q = (transcript[:13] + "..") if len(transcript) > 15 else transcript
+    draw.text((0, HDR_Y), q, font=font)
+
+    # Answer lines (4 visible)
+    visible = lines[scroll:scroll + VISIBLE]
+    for i, line in enumerate(visible):
+        draw.text((0, ANS_Y + i * LINE_H), line, font=font)
+
+    # Scroll arrows (drawn as simple pixel triangles to stay crisp)
+    if scroll > 0:
+        draw.polygon([(80, 8), (83, 8), (81, 6)], fill=0)
+    if scroll + VISIBLE < len(lines):
+        draw.polygon([(80, 46), (83, 46), (81, 48)], fill=0)
+
+    display.image(image)
+    display.show()
 
 
 def _centered_x(draw, text, font, width):
@@ -218,7 +255,16 @@ while True:
     # --- Render ---
     if needs_update:
         msg, body = FUNC_MAP[option](command)
-        if (msg, body) != last_content or nav_changed:
+        if option == ASST_IDX and functions._asst_state == 'showing':
+            new_content = ('__asst__', functions._asst_scroll)
+            if new_content != last_content or nav_changed:
+                render_assistant_answer(
+                    functions._asst_transcript,
+                    functions._asst_lines,
+                    functions._asst_scroll,
+                )
+                last_content = new_content
+        elif (msg, body) != last_content or nav_changed:
             render(option, msg, body)
             last_content = (msg, body)
         last_update_time = now

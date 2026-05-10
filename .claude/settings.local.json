@@ -39,7 +39,15 @@
       "Bash(bash *)",
       "Bash(sudo -S rm -rf debian/opt)",
       "Bash(sudo -S dpkg -i pi-clock_2.0.1_all.deb)",
-      "Bash(sudo -S systemctl status pi_clock.service)"
+      "Bash(sudo -S systemctl status pi_clock.service)",
+      "Bash(sudo dpkg *)",
+      "Bash(sudo -S dpkg -i /home/pi/Documents/pi-clock/pi-clock_2.0.2_all.deb)",
+      "Bash(wait)",
+      "Bash(sudo -S journalctl -u pi_clock.service -n 50 --no-pager)",
+      "Bash(sudo -S systemctl status pi_clock.service --no-pager)",
+      "Bash(curl *)",
+      "Bash(sudo -S dpkg -i pi-clock_2.0.2_all.deb)",
+      "Bash(git add *)"
     ]
   }
 }
