@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import time
 import adafruit_pcd8544
 import board
@@ -50,7 +51,6 @@ MENU = [
     "Volume",
     "Shutdown",
     "Restart",
-    "Assistant",
 ]
 
 IMG_FILES = [
@@ -67,7 +67,6 @@ IMG_FILES = [
     "volume.bmp",
     "shutdown.bmp",
     "restart.bmp",
-    "assistant.bmp",
 ]
 
 # How often each screen refreshes (seconds)
@@ -85,10 +84,15 @@ UPDATE_INTERVALS = [
     30.0,  # Volume
     30.0,  # Shutdown
     30.0,  # Restart
-    0.5,   # Assistant (frequent refresh for countdown/state changes)
 ]
 
-ASST_IDX = MENU.index("Assistant")
+ASST_ENABLED = os.environ.get('ASST_ENABLED', '1') == '1'
+if ASST_ENABLED:
+    MENU.append("Assistant")
+    IMG_FILES.append("assistant.bmp")
+    UPDATE_INTERVALS.append(0.5)
+
+ASST_IDX = MENU.index("Assistant") if ASST_ENABLED else -1
 
 # Screens where holding yes/no auto-repeats (contrast and volume)
 AUTO_REPEAT_SCREENS = {9, 10}
@@ -123,8 +127,9 @@ FUNC_MAP = [
     functions.set_volume,
     functions.shutdown,
     functions.restart,
-    functions.ask_assistant,
 ]
+if ASST_ENABLED:
+    FUNC_MAP.append(functions.ask_assistant)
 
 
 def render_assistant_answer(transcript, lines, scroll):

@@ -47,7 +47,9 @@
       "Bash(sudo -S systemctl status pi_clock.service --no-pager)",
       "Bash(curl *)",
       "Bash(sudo -S dpkg -i pi-clock_2.0.2_all.deb)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(xargs cat)",
+      "Bash(pip3 install *)"
     ]
   }
 }

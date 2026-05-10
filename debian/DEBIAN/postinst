@@ -16,7 +16,7 @@ case "$1" in
 
         # Install Python packages not available in apt
         if command -v pip3 >/dev/null 2>&1; then
-            PIP_PKGS="adafruit-circuitpython-pcd8544 vosk sounddevice yfinance requests"
+            PIP_PKGS="adafruit-circuitpython-pcd8544 faster-whisper sounddevice yfinance requests"
             echo "Installing Python packages: $PIP_PKGS"
             # Install PortAudio system library required by sounddevice
             apt-get install -y libportaudio2 >/dev/null 2>&1 || true
@@ -52,54 +52,61 @@ case "$1" in
             echo "Warning: Could not find config.txt. Please add 'dtoverlay=spi0-0cs' manually."
         fi
 
-        # --- Ollama configuration ---
+        # --- Assistant / Ollama configuration ---
         echo ""
-        echo "=== Ollama Server Configuration ==="
+        echo "=== Assistant Configuration ==="
         printf "Enter Ollama server IP or host:port (e.g. 192.168.1.30 or 192.168.1.30:11434)\n"
-        printf "Ollama server [192.168.1.30]: "
+        printf "Press Enter to disable the Assistant: "
         read OLLAMA_HOST_INPUT </dev/tty
-        OLLAMA_HOST_INPUT=${OLLAMA_HOST_INPUT:-192.168.1.30}
 
-        if echo "$OLLAMA_HOST_INPUT" | grep -q ":"; then
-            OLLAMA_URL="http://${OLLAMA_HOST_INPUT}"
+        SERVICE_FILE="/opt/pi-clock/pi_clock.service"
+
+        if [ -z "$OLLAMA_HOST_INPUT" ]; then
+            echo "✓ Assistant disabled — menu entry will be hidden"
+            sed -i "s|^Environment=ASST_ENABLED=.*|Environment=ASST_ENABLED=0|" "$SERVICE_FILE"
+            sed -i "s|^Environment=OLLAMA_HOST=.*|Environment=OLLAMA_HOST=|" "$SERVICE_FILE"
+            sed -i "s|^Environment=OLLAMA_MODEL=.*|Environment=OLLAMA_MODEL=|" "$SERVICE_FILE"
         else
-            OLLAMA_URL="http://${OLLAMA_HOST_INPUT}:11434"
-        fi
+            if echo "$OLLAMA_HOST_INPUT" | grep -q ":"; then
+                OLLAMA_URL="http://${OLLAMA_HOST_INPUT}"
+            else
+                OLLAMA_URL="http://${OLLAMA_HOST_INPUT}:11434"
+            fi
 
-        echo "Fetching available models from ${OLLAMA_URL}..."
-        MODELS_JSON=$(curl -sf --connect-timeout 5 "${OLLAMA_URL}/api/tags" 2>/dev/null || echo "")
+            echo "Fetching available models from ${OLLAMA_URL}..."
+            MODELS_JSON=$(curl -sf --connect-timeout 5 "${OLLAMA_URL}/api/tags" 2>/dev/null || echo "")
 
-        if [ -z "$MODELS_JSON" ]; then
-            echo "Warning: Could not reach Ollama server at ${OLLAMA_URL}."
-            printf "Enter model name manually [deepseek-coder-v2:latest]: "
-            read OLLAMA_MODEL_FINAL </dev/tty
-            OLLAMA_MODEL_FINAL=${OLLAMA_MODEL_FINAL:-deepseek-coder-v2:latest}
-        else
-            MODEL_LIST=$(echo "$MODELS_JSON" | python3 -c "
+            if [ -z "$MODELS_JSON" ]; then
+                echo "Warning: Could not reach Ollama server at ${OLLAMA_URL}."
+                printf "Enter model name manually [deepseek-coder-v2:latest]: "
+                read OLLAMA_MODEL_FINAL </dev/tty
+                OLLAMA_MODEL_FINAL=${OLLAMA_MODEL_FINAL:-deepseek-coder-v2:latest}
+            else
+                MODEL_LIST=$(echo "$MODELS_JSON" | python3 -c "
 import sys, json
 models = [m['name'] for m in json.load(sys.stdin).get('models', [])]
 for i, m in enumerate(models, 1):
     print(f'  {i}. {m}')
 " 2>/dev/null)
-            MODEL_COUNT=$(echo "$MODELS_JSON" | python3 -c "
+                MODEL_COUNT=$(echo "$MODELS_JSON" | python3 -c "
 import sys, json
 print(len(json.load(sys.stdin).get('models', [])))
 " 2>/dev/null)
 
-            if [ -z "$MODEL_LIST" ] || [ "$MODEL_COUNT" = "0" ]; then
-                echo "No models found on server."
-                printf "Enter model name manually [deepseek-coder-v2:latest]: "
-                read OLLAMA_MODEL_FINAL </dev/tty
-                OLLAMA_MODEL_FINAL=${OLLAMA_MODEL_FINAL:-deepseek-coder-v2:latest}
-            else
-                echo ""
-                echo "Available models:"
-                echo "$MODEL_LIST"
-                echo ""
-                printf "Select model number [1]: "
-                read MODEL_SEL </dev/tty
-                MODEL_SEL=${MODEL_SEL:-1}
-                OLLAMA_MODEL_FINAL=$(echo "$MODELS_JSON" | python3 -c "
+                if [ -z "$MODEL_LIST" ] || [ "$MODEL_COUNT" = "0" ]; then
+                    echo "No models found on server."
+                    printf "Enter model name manually [deepseek-coder-v2:latest]: "
+                    read OLLAMA_MODEL_FINAL </dev/tty
+                    OLLAMA_MODEL_FINAL=${OLLAMA_MODEL_FINAL:-deepseek-coder-v2:latest}
+                else
+                    echo ""
+                    echo "Available models:"
+                    echo "$MODEL_LIST"
+                    echo ""
+                    printf "Select model number [1]: "
+                    read MODEL_SEL </dev/tty
+                    MODEL_SEL=${MODEL_SEL:-1}
+                    OLLAMA_MODEL_FINAL=$(echo "$MODELS_JSON" | python3 -c "
 import sys, json
 models = [m['name'] for m in json.load(sys.stdin).get('models', [])]
 try:
@@ -107,15 +114,15 @@ try:
 except:
     print(models[0])
 " 2>/dev/null)
+                fi
             fi
+
+            echo "✓ Ollama server : ${OLLAMA_HOST_INPUT}"
+            echo "✓ Model         : ${OLLAMA_MODEL_FINAL}"
+            sed -i "s|^Environment=ASST_ENABLED=.*|Environment=ASST_ENABLED=1|" "$SERVICE_FILE"
+            sed -i "s|^Environment=OLLAMA_HOST=.*|Environment=OLLAMA_HOST=${OLLAMA_HOST_INPUT}|" "$SERVICE_FILE"
+            sed -i "s|^Environment=OLLAMA_MODEL=.*|Environment=OLLAMA_MODEL=${OLLAMA_MODEL_FINAL}|" "$SERVICE_FILE"
         fi
-
-        echo "✓ Ollama server : ${OLLAMA_HOST_INPUT}"
-        echo "✓ Model         : ${OLLAMA_MODEL_FINAL}"
-
-        SERVICE_FILE="/opt/pi-clock/pi_clock.service"
-        sed -i "s|^Environment=OLLAMA_HOST=.*|Environment=OLLAMA_HOST=${OLLAMA_HOST_INPUT}|" "$SERVICE_FILE"
-        sed -i "s|^Environment=OLLAMA_MODEL=.*|Environment=OLLAMA_MODEL=${OLLAMA_MODEL_FINAL}|" "$SERVICE_FILE"
 
         # Create symbolic link for systemd service
         if [ ! -f /etc/systemd/system/pi_clock.service ]; then

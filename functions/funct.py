@@ -70,7 +70,7 @@ class function(object):
         # Voice assistant state
         self._asst_state = 'init'   # init|idle|listening|processing|showing
         self._asst_loading = False
-        self._asst_vosk_model = None
+        self._asst_whisper_model = None
         self._asst_mic_idx = None
         self._asst_transcript = ''
         self._asst_lines = []
@@ -291,16 +291,19 @@ class function(object):
 
     # ── Voice assistant ────────────────────────────────────────────────────────
 
-    def _asst_load_vosk(self):
+    def _asst_load_whisper(self):
         try:
-            from vosk import Model
+            from faster_whisper import WhisperModel
             model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     '..', 'models', 'vosk-model-small-en-us-0.15')
-            self._asst_vosk_model = Model(model_dir)
+                                     '..', 'models')
+            self._asst_whisper_model = WhisperModel(
+                'tiny.en', device='cpu', compute_type='int8',
+                download_root=model_dir,
+            )
             self._asst_state = 'idle'
         except Exception as e:
-            print(f"Vosk load error: {e}")
-            self._asst_lines = self._asst_wrap(f"Vosk error: {e}")
+            print(f"Whisper load error: {e}")
+            self._asst_lines = self._asst_wrap(f"Whisper error: {e}")
             self._asst_state = 'showing'
 
     def _asst_find_mic(self):
@@ -319,10 +322,9 @@ class function(object):
     def _asst_record_and_process(self):
         import sounddevice as sd
         import numpy as np
-        from vosk import KaldiRecognizer
 
-        VOSK_RATE = 16000
-        DURATION  = 6
+        RATE     = 16000
+        DURATION = 6
 
         try:
             if self._asst_mic_idx is None:
@@ -332,29 +334,37 @@ class function(object):
                 self._asst_state = 'showing'
                 return
 
-            # Record at the device's native rate, then resample to 16 kHz for vosk
-            dev_info   = sd.query_devices(self._asst_mic_idx)
-            native_rate = int(dev_info['default_samplerate'])
-            audio = sd.rec(int(DURATION * native_rate), samplerate=native_rate,
-                           channels=1, dtype='int16', device=self._asst_mic_idx)
-            sd.wait()
-
-            # Linear-interpolation resample to VOSK_RATE
-            samples_in  = audio.flatten().astype(np.float32)
-            samples_out = int(len(samples_in) * VOSK_RATE / native_rate)
-            resampled   = np.interp(
-                np.linspace(0, len(samples_in) - 1, samples_out),
-                np.arange(len(samples_in)),
-                samples_in,
-            ).astype(np.int16)
-            audio = resampled
+            # Prefer recording at 16 kHz directly; fall back to native rate + resample
+            try:
+                audio = sd.rec(int(DURATION * RATE), samplerate=RATE, channels=1,
+                               dtype='float32', device=self._asst_mic_idx)
+                sd.wait()
+                audio = audio.flatten()
+            except Exception:
+                dev_info    = sd.query_devices(self._asst_mic_idx)
+                native_rate = int(dev_info['default_samplerate'])
+                audio = sd.rec(int(DURATION * native_rate), samplerate=native_rate,
+                               channels=1, dtype='float32', device=self._asst_mic_idx)
+                sd.wait()
+                audio = audio.flatten()
+                try:
+                    from scipy.signal import resample_poly
+                    from math import gcd
+                    g = gcd(RATE, native_rate)
+                    audio = resample_poly(audio, RATE // g, native_rate // g).astype(np.float32)
+                except ImportError:
+                    n_out = int(len(audio) * RATE / native_rate)
+                    audio = np.interp(
+                        np.linspace(0, len(audio) - 1, n_out),
+                        np.arange(len(audio)), audio,
+                    ).astype(np.float32)
 
             self._asst_state = 'processing'
 
-            rec = KaldiRecognizer(self._asst_vosk_model, VOSK_RATE)
-            rec.AcceptWaveform(audio.tobytes())
-            result = json.loads(rec.FinalResult())
-            self._asst_transcript = result.get('text', '').strip()
+            segments, _ = self._asst_whisper_model.transcribe(
+                audio, beam_size=5, language='en',
+            )
+            self._asst_transcript = ' '.join(seg.text for seg in segments).strip()
             print(f"Heard: {self._asst_transcript!r}")
 
             if not self._asst_transcript:
@@ -503,7 +513,7 @@ class function(object):
         if self._asst_state == 'init':
             if not self._asst_loading:
                 self._asst_loading = True
-                threading.Thread(target=self._asst_load_vosk, daemon=True).start()
+                threading.Thread(target=self._asst_load_whisper, daemon=True).start()
             return "Loading...", "Please wait"
 
         elif self._asst_state == 'idle':
