@@ -78,8 +78,11 @@ Type=simple
 User=root
 WorkingDirectory=/opt/pi-clock/
 Environment=ASST_ENABLED=1
-Environment=OLLAMA_HOST=192.168.1.30
-Environment=OLLAMA_MODEL=deepseek-coder-v2:latest
+Environment=ASST_BACKEND=ollama
+Environment=OLLAMA_HOST=
+Environment=OLLAMA_MODEL=
+Environment=GEMINI_API_KEY=
+Environment=GEMINI_MODEL=gemini-2.5-flash-lite
 ExecStart=/usr/bin/python3 /opt/pi-clock/main
 Restart=always
 RestartSec=10

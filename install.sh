@@ -90,9 +90,9 @@ elif [ "$ASST_CHOICE" = "2" ]; then
         echo "✗ No API key entered. Assistant disabled."
         sed -i "s|^Environment=ASST_ENABLED=.*|Environment=ASST_ENABLED=0|" pi_clock.service
     else
-        printf "Gemini model [gemini-1.5-flash]: "
+        printf "Gemini model [gemini-2.5-flash-lite]: "
         read GEMINI_MDL </dev/tty
-        GEMINI_MDL=${GEMINI_MDL:-gemini-1.5-flash}
+        GEMINI_MDL=${GEMINI_MDL:-gemini-2.5-flash-lite}
         echo "✓ Backend  : Gemini"
         echo "✓ Model    : ${GEMINI_MDL}"
         sed -i "s|^Environment=ASST_ENABLED=.*|Environment=ASST_ENABLED=1|" pi_clock.service
