@@ -406,7 +406,7 @@ class function(object):
             self._asst_state = 'showing'
             return
 
-        ans = self._asst_sanitise(self._asst_ollama(text))
+        ans = self._asst_sanitise(self._asst_ai(text))
         self._asst_lines = self._asst_wrap(ans)
         self._asst_state = 'showing'
 
@@ -489,6 +489,29 @@ class function(object):
             return r.json()["message"]["content"].strip()
         except Exception as e:
             return f"Ollama error: {str(e)[:55]}"
+
+    def _asst_gemini(self, question):
+        import requests
+        api_key = os.environ.get('GEMINI_API_KEY', '')
+        if not api_key:
+            return "Set GEMINI_API_KEY env var."
+        model = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
+        url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+               f"{model}:generateContent?key={api_key}")
+        payload = {"contents": [{"parts": [{"text":
+            f"Answer briefly in 1-2 sentences, no markdown: {question}"}]}]}
+        try:
+            r = requests.post(url, json=payload, timeout=15)
+            r.raise_for_status()
+            return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except Exception as e:
+            return f"Gemini error: {str(e)[:55]}"
+
+    def _asst_ai(self, question):
+        backend = os.environ.get('ASST_BACKEND', 'ollama').lower()
+        if backend == 'gemini':
+            return self._asst_gemini(question)
+        return self._asst_ollama(question)
 
     def _asst_sanitise(self, text):
         """Strip characters the font can't render (emoji, degree symbol, etc.)."""
