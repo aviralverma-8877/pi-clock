@@ -1,40 +1,41 @@
 # pi-clock
 
-A Nokia 5110 LCD-based system monitor and clock for Raspberry Pi with interactive button controls.
+A Nokia 5110 LCD-based system monitor, clock, and voice assistant for Raspberry Pi with interactive button controls.
 
 ## Features
 
 - **Real-time Clock**: Display time in 24-hour or AM/PM format
-- **System Monitoring**: View CPU, RAM, disk usage, and temperature
-- **Network Status**: Check IP address and connection status
-- **System Management**:
-  - Update/upgrade packages
-  - Adjust display contrast and backlight
-  - Control system volume
-  - Shutdown/restart system
-- **Interactive Controls**: Four buttons for navigation and selection
+- **System Monitoring**: CPU, RAM, disk usage, and temperature
+- **Network Status**: Local IP address and connection status
+- **System Management**: Package updates, shutdown, restart
+- **Display Controls**: Backlight toggle, contrast and volume adjustment
+- **Voice Assistant** *(optional)*: Ask questions via USB microphone — powered by Gemini (Google) or Ollama (local/network LLM)
+  - Weather by city
+  - Stock prices
+  - Air quality (PM2.5)
+  - General Q&A via AI
 
 ## Hardware Requirements
 
-- **Raspberry Pi** (Tested on Pi 3/4/5)
+- **Raspberry Pi** (Pi 3, 4, 5, Zero W/2W)
 - **Nokia 5110 LCD Display** (PCD8544 controller)
 - **4 Push Buttons** for navigation
-- **Connecting Wires**
+- **USB Microphone** *(optional — required for Voice Assistant)*
 
 ### Pin Connections
 
-| Component | GPIO Pin | Physical Pin |
-|-----------|----------|--------------|
-| LCD SCLK  | GPIO 11  | Pin 23       |
-| LCD DIN   | GPIO 10  | Pin 19       |
-| LCD DC    | GPIO 23  | Pin 16       |
-| LCD CS    | GPIO 8   | Pin 24       |
-| LCD RST   | GPIO 24  | Pin 18       |
-| LCD BL    | GPIO 22  | Pin 15       |
-| Button Prev | GPIO 27 | Pin 13      |
-| Button Next | GPIO 18 | Pin 12      |
-| Button Yes | GPIO 17 | Pin 11       |
-| Button No | GPIO 25 | Pin 22       |
+| Component    | GPIO Pin | Physical Pin |
+|--------------|----------|--------------|
+| LCD SCLK     | GPIO 11  | Pin 23       |
+| LCD DIN      | GPIO 10  | Pin 19       |
+| LCD DC       | GPIO 23  | Pin 16       |
+| LCD CS       | GPIO 8   | Pin 24       |
+| LCD RST      | GPIO 24  | Pin 18       |
+| LCD BL       | GPIO 22  | Pin 15       |
+| Button Prev  | GPIO 27  | Pin 13       |
+| Button Next  | GPIO 18  | Pin 12       |
+| Button Yes   | GPIO 17  | Pin 11       |
+| Button No    | GPIO 25  | Pin 22       |
 
 ## Compatibility
 
@@ -42,180 +43,180 @@ A Nokia 5110 LCD-based system monitor and clock for Raspberry Pi with interactiv
 - **Raspberry Pi Models**: Pi 3, Pi 4, Pi 5, Pi Zero W/2W
 - **Python**: 3.9+
 
-### Raspberry Pi 5 Notes
-
-The software is compatible with Raspberry Pi 5. The GPIO pins work the same way through the `gpiozero` library. Ensure SPI is enabled during installation.
-
 ## Installation
 
 ### Method 1: Debian Package (Recommended)
 
-Download and install the .deb package:
-
 ```bash
-# Download the latest release
-wget https://github.com/aviralverma-8877/pi-clock/releases/download/v2.0.0/pi-clock_2.0.0_all.deb
-
-# Install the package
-sudo dpkg -i pi-clock_2.0.0_all.deb
-
-# Install any missing dependencies
+wget https://github.com/aviralverma-8877/pi-clock/releases/download/v2.0.3/pi-clock_2.0.3_all.deb
+sudo dpkg -i pi-clock_2.0.3_all.deb
 sudo apt-get install -f
 ```
 
-The Debian package automatically handles:
-- System package installation
-- Python dependencies
-- SPI interface configuration
-- Systemd service setup and start
-
-**Note**: The package uses `Architecture: all` to work on both 32-bit (armhf) and 64-bit (arm64) Raspberry Pi OS.
-
-**Troubleshooting**: If you encounter dependency issues, see [INSTALL-TROUBLESHOOTING.md](INSTALL-TROUBLESHOOTING.md).
+During installation you will be prompted to choose an AI backend for the Voice Assistant (Gemini, Ollama, or disabled).
 
 See [DEBIAN-PACKAGE.md](DEBIAN-PACKAGE.md) for building the package yourself.
 
-### Method 2: Installation Script
-
-Run the following command to install:
+### Method 2: Install Script
 
 ```bash
-wget --no-check-certificate https://raw.githubusercontent.com/aviralverma-8877/pi-clock/master/install.sh && sudo chmod +x install.sh && sudo ./install.sh
+wget --no-check-certificate https://raw.githubusercontent.com/aviralverma-8877/pi-clock/master/install.sh \
+  && sudo chmod +x install.sh && sudo ./install.sh
 ```
 
-The installation script will:
-1. Update system packages
-2. Install required Python dependencies
-3. Enable SPI interface
-4. Clone the repository
-5. Set up and start the systemd service
+**Troubleshooting**: See [INSTALL-TROUBLESHOOTING.md](INSTALL-TROUBLESHOOTING.md) if you hit dependency issues.
 
 ## Usage
 
-After installation, the clock service will start automatically on boot.
+The service starts automatically on boot.
+
+### Button Controls
+
+| Button | Action |
+|--------|--------|
+| **Next** | Scroll to next menu item |
+| **Prev** | Scroll to previous menu item |
+| **Yes** | Confirm / toggle / adjust up |
+| **No** | Cancel / adjust down |
+
+### Menu Items
+
+| # | Screen | Yes | No |
+|---|--------|-----|----|
+| 1 | Time | Toggle 24hr/AM-PM | Toggle 24hr/AM-PM |
+| 2 | Date | — | — |
+| 3 | Upgrade | Refresh package list | Run full upgrade |
+| 4 | Network | — | — |
+| 5 | Temperature | Toggle °F | Toggle °C |
+| 6 | CPU | — | — |
+| 7 | RAM | — | — |
+| 8 | Disk | — | — |
+| 9 | Backlight | Turn on | Turn off |
+| 10 | Contrast | Decrease | Increase |
+| 11 | Volume | Volume up | Volume down |
+| 12 | Shutdown | Confirm shutdown | — |
+| 13 | Restart | Confirm restart | — |
+| 14 | Assistant | Start listening / New question | Scroll answer down |
+
+*Assistant menu only appears when `ASST_ENABLED=1` in the service file.*
 
 ### Service Management
 
 ```bash
-# Check service status
 sudo systemctl status pi_clock.service
-
-# View logs
-journalctl -u pi_clock.service -f
-
-# Restart service
 sudo systemctl restart pi_clock.service
-
-# Stop service
-sudo systemctl stop pi_clock.service
-
-# Disable auto-start
-sudo systemctl disable pi_clock.service
+journalctl -u pi_clock.service -f
 ```
 
-### Button Controls
+## Voice Assistant
 
-- **Next/Prev**: Navigate through menu items
-- **Yes/No**: Select options or toggle settings
+The assistant uses [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (tiny.en model) for speech-to-text and routes general questions to your chosen AI backend.
 
-### Menu Items
+### Backends
 
-1. **Time**: Switch between 24-hour and 12-hour format
-2. **Date**: Display current date and day
-3. **Upgrade**: Check and install system updates
-4. **Network**: View local IP address
-5. **Temperature**: CPU temperature (toggle °C/°F)
-6. **CPU**: Frequency and usage percentage
-7. **RAM**: Memory usage statistics
-8. **Disk**: Storage information
-9. **Backlight**: Toggle LCD backlight on/off
-10. **Contrast**: Adjust display contrast
-11. **Volume**: Increase/decrease system volume
-12. **Shutdown**: Power off the system
-13. **Restart**: Reboot the system
+#### Gemini (Google AI)
+Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey), then set:
+```
+Environment=ASST_BACKEND=gemini
+Environment=GEMINI_API_KEY=your_key_here
+Environment=GEMINI_MODEL=gemini-2.5-flash-lite
+```
+
+#### Ollama (Local / Network LLM)
+Run [Ollama](https://ollama.ai) on any machine on your network, then set:
+```
+Environment=ASST_BACKEND=ollama
+Environment=OLLAMA_HOST=192.168.1.x
+Environment=OLLAMA_MODEL=llama3.2
+```
+
+### Configuring After Install
+
+Edit the service file:
+```bash
+sudo nano /opt/pi-clock/pi_clock.service
+sudo systemctl daemon-reload
+sudo systemctl restart pi_clock.service
+```
+
+### How to Use the Assistant
+
+1. Navigate to the **Assistant** screen
+2. Press **YES** — recording starts (6 seconds)
+3. Speak your question
+4. Wait for the answer to appear
+5. Press **NO** to scroll through longer answers
+6. Press **YES** again to ask another question
+
+### Special Queries
+
+- *"Weather in London"* — current conditions and temperature
+- *"Price of Apple"* / *"Stock price of TSLA"* — live stock price
+- *"Air quality in Delhi"* — PM2.5 reading and category
+- Anything else — routed to your AI backend
 
 ## Troubleshooting
 
-### Display stuck on "Restart" screen or menu auto-scrolling
+### Display stuck or menu auto-scrolling
 
-**Symptom**: Display shows "Restart" immediately after startup, or menu cycles through options rapidly without button presses.
+Symptom: display shows "Restart" on boot, or menu scrolls on its own.
 
-**Cause**: Missing pull-up resistors on button GPIO pins (fixed in v2.0.1+)
-
-**Quick Fix**:
-```bash
-sudo systemctl stop pi_clock.service
-sudo nano /opt/pi-clock/main
-
-# Find lines 34-37 and change from:
-#   prev_btn.switch_to_input()
-# To:
-#   prev_btn.switch_to_input(pull=digitalio.Pull.UP)
-# (Apply to all 4 button lines)
-
-# Save (Ctrl+O, Enter) and exit (Ctrl+X)
-sudo systemctl restart pi_clock.service
-```
-
-See [BUTTON-FIX-README.md](BUTTON-FIX-README.md) for detailed instructions.
-
-**To diagnose**:
-```bash
-sudo systemctl stop pi_clock.service
-cd /opt/pi-clock
-sudo python3 diagnose.py
-```
+This was a pull-up resistor bug fixed in v2.0.1. See [BUTTON-FIX-README.md](BUTTON-FIX-README.md).
 
 ### Display not working
-- Verify SPI is enabled: `sudo raspi-config nonint do_spi 0`
-- Check wiring connections
-- Verify display contrast settings
 
-### Service fails to start
 ```bash
-# Check logs for errors
-journalctl -u pi_clock.service -n 50
-
-# Common issues:
-# - Missing dependencies: Run install.sh again
-# - Permission errors: Ensure service runs as root
-# - Hardware not connected: Check wiring
+sudo raspi-config nonint do_spi 0
+sudo reboot
 ```
 
+### Service fails to start
+
+```bash
+journalctl -u pi_clock.service -n 50
+```
+
+Common causes: missing dependencies, hardware not connected, SPI not enabled.
+
+### Assistant not responding / "Set GEMINI_API_KEY"
+
+Check that `ASST_BACKEND`, `GEMINI_API_KEY` (or `OLLAMA_HOST`), and `ASST_ENABLED=1` are all set in `/opt/pi-clock/pi_clock.service`.
+
 ### Buttons not responding
-- Verify GPIO pin connections
-- Check button wiring (buttons should connect GPIO to Ground)
-- Run diagnostic: `sudo python3 /opt/pi-clock/diagnose.py`
+
+- Verify GPIO wiring (buttons connect GPIO to Ground)
+- Run: `sudo python3 /opt/pi-clock/diagnose.py`
 
 ## Development
 
-### Manual Installation
+### Manual Setup
 
 ```bash
 cd ~
 git clone https://github.com/aviralverma-8877/pi-clock.git
 cd pi-clock
 
-# Install dependencies
-sudo apt install -y python3-pip python3-pil python3-psutil python3-gpiozero python3-apt
-pip3 install --break-system-packages adafruit-circuitpython-pcd8544
+sudo apt install -y python3-pip python3-pil python3-psutil python3-gpiozero python3-apt libportaudio2
+pip3 install --break-system-packages adafruit-circuitpython-pcd8544 faster-whisper sounddevice yfinance requests
 
-# Enable SPI
 sudo raspi-config nonint do_spi 0
-
-# Run manually
 sudo python3 main
 ```
 
+### Building the Debian Package
+
+```bash
+./build-deb.sh
+```
+
+See [DEBIAN-PACKAGE.md](DEBIAN-PACKAGE.md) for details.
+
 ## License
 
-This project is open source. Feel free to modify and distribute.
+Open source — free to modify and distribute.
 
 ## Credits
 
-- Display Driver: Adafruit PCD8544 CircuitPython library
+- Display driver: [Adafruit PCD8544 CircuitPython](https://github.com/adafruit/Adafruit_CircuitPython_PCD8544)
+- Speech-to-text: [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
 - Font: Enter Command (included)
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit issues or pull requests.

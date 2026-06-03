@@ -34,7 +34,7 @@ sudo apt-get install dpkg-dev build-essential
    ./build-deb.sh
    ```
 
-3. The script will create `pi-clock_2.0.0_all.deb` in the current directory.
+3. The script will create `pi-clock_2.0.3_all.deb` in the current directory.
 
 ### Build Output
 
@@ -51,12 +51,12 @@ The build script will:
 
 1. Transfer the .deb file to your Raspberry Pi (if built elsewhere):
    ```bash
-   scp pi-clock_2.0.0_all.deb pi@raspberrypi.local:~
+   scp pi-clock_2.0.3_all.deb pi@raspberrypi.local:~
    ```
 
 2. Install the package:
    ```bash
-   sudo dpkg -i pi-clock_2.0.0_all.deb
+   sudo dpkg -i pi-clock_2.0.3_all.deb
    ```
 
 3. If there are missing dependencies, install them:
@@ -69,7 +69,7 @@ The build script will:
 The package will automatically:
 1. Install files to `/opt/pi-clock/`
 2. Install required system packages
-3. Install Python packages (adafruit-circuitpython-pcd8544)
+3. Install Python packages (adafruit-circuitpython-pcd8544, faster-whisper, sounddevice, yfinance, requests)
 4. Enable SPI interface
 5. Create systemd service symlink
 6. Enable and start the pi_clock service
@@ -133,7 +133,7 @@ sudo apt-get purge pi-clock
 ## Package Structure
 
 ```
-pi-clock_2.0.0_all.deb
+pi-clock_2.0.3_all.deb
 ├── DEBIAN/
 │   ├── control          # Package metadata and dependencies
 │   ├── postinst         # Post-installation script
@@ -155,12 +155,12 @@ pi-clock_2.0.0_all.deb
 
 Edit `build-deb.sh`:
 ```bash
-VERSION="2.0.1"
+VERSION="2.0.3"
 ```
 
 Edit `debian/DEBIAN/control`:
 ```
-Version: 2.0.1
+Version: 2.0.3
 ```
 
 ### Changing Installation Path
@@ -226,13 +226,13 @@ For easier distribution, create an APT repository:
 
 1. Sign the package:
    ```bash
-   dpkg-sig --sign builder pi-clock_2.0.0_all.deb
+   dpkg-sig --sign builder pi-clock_2.0.3_all.deb
    ```
 
 2. Create repository structure:
    ```bash
    mkdir -p repo/binary
-   cp pi-clock_2.0.0_all.deb repo/binary/
+   cp pi-clock_2.0.3_all.deb repo/binary/
    cd repo
    dpkg-scanpackages binary /dev/null | gzip -9c > binary/Packages.gz
    ```
@@ -249,11 +249,11 @@ For easier distribution, create an APT repository:
 Upload the .deb file to GitHub Releases for easy distribution:
 
 1. Create a release on GitHub
-2. Upload `pi-clock_2.0.0_all.deb`
+2. Upload `pi-clock_2.0.3_all.deb`
 3. Users can download and install:
    ```bash
-   wget https://github.com/aviralverma-8877/pi-clock/releases/download/v2.0.0/pi-clock_2.0.0_all.deb
-   sudo dpkg -i pi-clock_2.0.0_all.deb
+   wget https://github.com/aviralverma-8877/pi-clock/releases/download/v2.0.3/pi-clock_2.0.3_all.deb
+   sudo dpkg -i pi-clock_2.0.3_all.deb
    ```
 
 ## Package Testing
@@ -263,7 +263,7 @@ Before distribution, test the package thoroughly:
 ### Clean Installation Test
 ```bash
 # On a fresh Raspberry Pi
-sudo dpkg -i pi-clock_2.0.0_all.deb
+sudo dpkg -i pi-clock_2.0.3_all.deb
 sudo apt-get install -f
 sudo systemctl status pi_clock.service
 ```
@@ -272,7 +272,7 @@ sudo systemctl status pi_clock.service
 ```bash
 # Install old version first, then new version
 sudo dpkg -i pi-clock_1.0.0_armhf.deb
-sudo dpkg -i pi-clock_2.0.0_all.deb
+sudo dpkg -i pi-clock_2.0.3_all.deb
 ```
 
 ### Removal Test
